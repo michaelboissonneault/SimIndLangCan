@@ -1,0 +1,107 @@
+"Aboriginal Mother Tongue (90), Single and Multiple Mother Tongue Responses (3), Aboriginal Identity (9), Registered or Treaty Indian Status (3) and Age (12) for the Population in Private Households of Canada, Provinces and Territories, Census Metropolitan Areas and Census Agglomerations, 2016 Census - 25% Sample Data"
+"Geography = Canada [1]"
+"Global non-response rate (GNR) =   5.1 %"
+"Aboriginal identity (9) = Total - Aboriginal identity [2]"
+"Registered or Treaty Indian status (3) = Total - Population by Registered or Treaty Indian status [3]"
+"Age (12) =       75 years and over"
+"Aboriginal mother tongue (90)","Total - Single and multiple mother tongue responses [4]","  Single mother tongue responses [5]","  Multiple mother tongue responses [6]", 
+"Total - Mother tongue [7]",2152645,2125715,26925 
+"  Official languages",1567415,1540485,26930 
+"    English",1096975,1072610,24370 
+"    French",477670,467880,9790 
+"  Non-official languages",605520,585230,20290 
+"    Aboriginal languages",8050,7395,655 
+"      Algonquian languages",5220,4740,480 
+"        Blackfoot",255,235,20 
+"        Cree-Montagnais languages",3205,2890,310 
+"          Atikamekw",65,60,0 
+"          Montagnais (Innu)",225,215,0 
+"          Moose Cree",0,10,0 
+"          Naskapi",25,25,0 
+"          Northern East Cree",15,10,0 
+"          Plains Cree",205,185,20 
+"          Southern East Cree",0,10,0 
+"          Swampy Cree",60,55,0 
+"          Woods Cree",55,55,0 
+"          Cree, n.o.s.",2540,2275,270 
+"        Eastern Algonquian languages",310,290,20 
+"          Malecite",40,40,0 
+"          Mi'kmaq",260,250,15 
+"        Ojibway-Potawatomi languages",1455,1320,130 
+"          Algonquin",45,45,0 
+"          Ojibway",1115,990,125 
+"          Oji-Cree",280,270,0 
+"          Ottawa (Odawa)",15,15,0 
+"        Algonquian languages, n.i.e.",0,0,0 
+"      Athabaskan languages",995,960,40 
+"        Northern Athabaskan languages",995,960,35 
+"          Babine (Wetsuwet'en)",20,20,0 
+"          Beaver",15,10,0 
+"          Carrier",145,135,10 
+"          Chilcotin",60,55,0 
+"          Dene",345,335,10 
+"          Dogrib (Tlicho)",75,80,0 
+"          Gwich'in",60,60,0 
+"          Sarsi (Sarcee)",0,0,0 
+"          Sekani",10,10,0 
+"          Slavey-Hare languages",180,175,0 
+"            North Slavey (Hare)",75,70,0 
+"            South Slavey",65,65,0 
+"            Slavey, n.o.s.",45,40,0 
+"          Tahltan languages",25,30,0 
+"            Kaska (Nahani)",15,15,0 
+"            Tahltan",10,15,0 
+"          Tutchone languages",50,50,0 
+"            Northern Tutchone",30,25,10 
+"            Southern Tutchone",20,20,0 
+"        Athabaskan languages, n.i.e.",0,0,0 
+"      Haida",25,25,10 
+"      Inuit languages",510,510,0 
+"        Inuinnaqtun",40,40,0 
+"        Inuktitut",395,400,0 
+"        Inuvialuktun",45,45,0 
+"        Inuit languages, n.i.e.",25,25,0 
+"      Iroquoian languages",105,90,15 
+"        Cayuga",10,10,0 
+"        Mohawk",85,75,10 
+"        Oneida",0,10,0 
+"        Iroquoian languages, n.i.e.",0,0,0 
+"      Kutenai",0,0,0 
+"      Michif",115,105,10 
+"      Salish languages",390,355,35 
+"        Comox",10,10,0 
+"        Halkomelem",65,60,10 
+"        Lillooet",45,35,10 
+"        Okanagan",80,70,10 
+"        Shuswap (Secwepemctsin)",65,65,0 
+"        Squamish",10,10,0 
+"        Straits",15,10,0 
+"        Thompson (Ntlakapamux)",65,55,10 
+"        Salish languages, n.i.e.",40,40,10 
+"      Siouan languages",150,140,10 
+"        Dakota",65,65,0 
+"        Stoney",70,70,0 
+"        Siouan languages, n.i.e.",10,10,10 
+"      Tlingit",20,25,0 
+"      Tsimshian languages",240,210,25 
+"        Gitxsan (Gitksan)",110,95,20 
+"        Nisga'a",60,50,10 
+"        Tsimshian",70,65,0 
+"      Wakashan languages",225,205,20 
+"        Haisla",35,30,10 
+"        Heiltsuk",45,45,0 
+"        Kwakiutl (Kwak'wala)",70,55,10 
+"        Nuu-chah-nulth (Nootka)",70,70,0 
+"        Wakashan languages, n.i.e.",0,10,0 
+"      Aboriginal languages, n.o.s.",55,35,15 
+"    Non-Aboriginal languages",597465,577830,19635 
+"Note"
+"[1] Excludes census data for one or more incompletely enumerated Indian reserves or Indian settlements."
+"[2] Users should be aware that the estimates associated with this variable are more affected than most by the incomplete enumeration of certain Indian reserves and Indian settlements in the 2016 Census of Population. For more information on Aboriginal variables, including information on their classifications, the questions from which they are derived, data quality and their comparability with other sources of data, refer to the Aboriginal Peoples Reference Guide, Census of Population, 2016 and the Aboriginal Peoples Technical Report, Census of Population, 2016."
+"[2] Users should be aware that the estimates associated with this variable are more affected than most by the incomplete enumeration of certain Indian reserves and Indian settlements in the Census of Population.   For more information on Aboriginal variables, including information on their classifications, the questions from which they are derived, data quality and their comparability with other sources of data, please refer to the Aboriginal Peoples Reference Guide, Census of Population, 2016 and the Aboriginal Peoples Technical Report, Census of Population, 2016."
+"[3] The category 'Total - Single and multiple mother tongue responses' indicates the number of respondents who reported each language, either as their only response, or in combination with another language. Total responses represent the sum of single mother tongue responses and multiple mother tongue responses received in the census."
+"[4] A single mother tongue response occurs when a respondent provides one language only."
+"[5] A multiple mother tongue response occurs when a respondent provides two or more languages."
+"[6] This is a total population count. The sum of the languages in this table is greater than the total population count because a person may report more than one language in the census."
+"[6] n.i.e. = not included elsewhere n.o.s. = not otherwise specified"
+"Source: Statistics Canada - 2016 Census. Catalogue Number 98-400-X2016363."
