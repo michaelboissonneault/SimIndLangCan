@@ -16,7 +16,7 @@
 ################################################################################
 rm(list=ls())
 
-setwd("C:/Users/micha/Documents/Git-RStudio/SimulationIndigenousLanguagesCanada")
+setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan")
 
 #packages
 library(tidyverse)

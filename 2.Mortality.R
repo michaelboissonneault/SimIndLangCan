@@ -24,19 +24,14 @@ library(lubridate)
 library(openxlsx)
 
 #set directory
-setwd("C:/Users/micha/Dropbox/Work/Projects/LinguisticDiversity/Canada/")
-
-#un population projection 2019 
-unproj <- read.csv("Data/WPP2019_Life_Table_Medium.csv")
+setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan/")
 
 ################################################################################
 #2.PARAMETER ESTIMATION
 ################################################################################
 #2.1 Inuit population: change by age############################################ 
 #select relevant information 
-inuitmort <- unproj %>% 
-  filter(Location=="Lower-middle-income countries",Sex=="Total",MidPeriod>=2017) %>%
-  select(Location,MidPeriod,AgeGrpStart,AgeGrpSpan,qx,ex)
+inuitmort <- read.csv("UNMortalityLowerMiddleIncome.csv")
 
 #make year vector
 year <- seq(2018,2098,5)
@@ -129,7 +124,7 @@ x <- filter(inuitmort,MidPeriod==year[i],AgeGrpStart>=75)$AgeGrpStart
 plot(x,filter(inuitmort,MidPeriod==year[i],AgeGrpStart>=75)$qx)
 lines(x,old.a[[i]] + old.b[[i]]*log(x))
 
-#2.2 Inuit population: change over time########################################
+#2.2 Inuit mortality: change over time########################################
 #children
   #a parameter
   y <- unlist(child.a)
@@ -184,9 +179,7 @@ lines(x,old.a[[i]] + old.b[[i]]*log(x))
 
 #2.3 Indian population: change by age########################################### 
 #select relevant information
-indianmort <- unproj %>% 
-    filter(Location=="Upper-middle-income countries",Sex=="Total",MidPeriod>=2017) %>%
-    select(Location,MidPeriod,AgeGrpStart,AgeGrpSpan,qx,ex)
+indianmort <- read.csv("UNMortalityUpperMiddleIncome.csv")
   
 #children: exponential model
 child.a <- list()
@@ -455,10 +448,10 @@ ggplot(df,aes(age,value,group=label,color=label))+
 #4.SAVE PARAMETERS AND FUNCTIONS
 #############################################################################
 #list with mortality parameters (both populations) 
-saveRDS(list(inuit.list,indian.list),"Code/mortalityparameters")
+saveRDS(list(inuit.list,indian.list),"mortalityparameters")
 
 #list with mortality functions (both populations)
-saveRDS(list(mort.inuit,mort.indian),"Code/mortalityfunctions")
+saveRDS(list(mort.inuit,mort.indian),"mortalityfunctions")
 
 ################################################################################
 #5. SIMULATIONS
