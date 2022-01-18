@@ -3,7 +3,7 @@
 #IT IS FOUND BY DIVIDING THE NUMBER OF CHILDREN AGES 0-4 IN THE DATA 
 #BY THE NUMBER THAT WOULD BE EXPECTED IF TRANSMISSION WAS FULL. 
 #THIS RATIO IS MULTIPLIED BY THE FERTILITY RATES IN THE SIMULATIONS.
-#NOTE: THIS APPROACH IS NOT OPTIMAL AND WILL BE IMPROVED AS WE MOVE ON. 
+#NOTE: THIS APPROACH MIGHT NOT BE OPTIMAL AND SHOULD PROBABLY BE IMPROVED. 
 
 #CONTENT:
 #1. PACKAGES, DIRECTORY, DATA
@@ -20,14 +20,14 @@ library(lubridate)
 library(openxlsx)
 
 #Set directory
-setwd("C:/Users/micha/Dropbox/Work/Projects/LinguisticDiversity/Canada/")
+setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan")
 
 #load starting populations
-sp <- readRDS("Code/startingpopulations")
+sp <- readRDS("startingpopulations")
 
 #load fertility parameters & function
-fert.list <- readRDS("Code/fertilityparameters")
-fert.fct <- readRDS("Code/fertilityfunction")
+fert.parameters <- readRDS("fertilityparameters")
+fert.fct <- readRDS("fertilityfunction")
 
 ################################################################################
 #2. CALCULATION OF INTERGENERATIONAL TRANSMISSION
@@ -91,4 +91,4 @@ int.nb$slope <- unlist(lapply(1:length(languages),function(x)
 #####################################################################
 #3. SAVE EVERYTHING
 #####################################################################
-saveRDS(int.nb,"Code/int.nb")
+saveRDS(int.nb,"inttrans")

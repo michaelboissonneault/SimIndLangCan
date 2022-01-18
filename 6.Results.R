@@ -1,22 +1,30 @@
 ################################################################################
-#PACKAGES
+#IN THIS DO FILE: TABLES AND FIGURES TO DISPLAY RESULTS FROM SIMULATION. 
+#THIS FILE IS VERY MUCH AT ITS BEGINNING STILL; ANY MODIFICATION IS WELCOME.
+################################################################################
+##LOAD PACKAGES, SET DIRECTORY, LOAD RESULTS
 ################################################################################
 library(tidyverse)
 library(MicSim)
 library(lubridate)
 library(openxlsx)
-################################################################################
-#DIRECTORY, DATA FROM PREVIOUS CALCULATIONS FOR MORTALITY AND FERTILITY
-################################################################################
+
 rm(list=ls())
-setwd("//ia/NIDI$/home/MichaelBo/Documents/work/LinguisticDiversity/Canada/")
+
+setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan")
+
+#starting populations
+sp <- readRDS("startingpopulations")
+
+#languages
+languages <- unique(sp$language)
 
 ################################################################################
 #RESULTS
 ################################################################################
 #load results
-finalpop <- bind_rows(lapply(1:5, function(a) lapply(17:19,function(b)
-  readRDS(paste("Results/finalpop",languages[b],a,sep=""))
+finalpop <- bind_rows(lapply(1, function(a) lapply(4,function(b)
+  readRDS(paste("finalpop",languages[b],a,sep=""))
 )))
 
 #Data frame with speaker number and number of births                     
@@ -30,27 +38,11 @@ ggplot(results,aes(period,alive,group=run))+
   facet_wrap(~language,scales = "free")+
   theme_minimal()
 
-#distribution in 2050
-ggplot(filter(results,period==2050),aes(alive))+
-  geom_histogram(binwidth=1)+
-  facet_wrap(~language,scales="free")
-
 #speakers in 2100 
 results %>% group_by(language) %>% filter(period==2100) %>% 
   summarise(mean2100=mean(alive),
             lower= mean(alive)-1.96*sd(alive)/sqrt(max(results$run)),
             upper= mean(alive)+1.96*sd(alive)/sqrt(max(results$run)))
-
-#year of death
-deathyear <- results %>% group_by(language,run) %>% filter(is.na(alive)) %>% summarise(deathyear=min(period)) 
-table(deathyear$language)
-
-#only babine becomes extinct in each run
-deathyear %>% filter(language=="Babine") %>% 
-  summarise(meandeath=mean(deathyear),lower=mean(deathyear)-1.96*sd(deathyear)/sqrt(max(results$run)),
-            upper=mean(deathyear)+1.96*sd(deathyear)/sqrt(max(results$run)))
-
-#how to estimate uncertainty concerning the other languages? 
 
 ################################################################################
 #RESULTS BASED ON LEI SCALE

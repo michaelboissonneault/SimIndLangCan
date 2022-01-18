@@ -1,5 +1,6 @@
 ################################################################################
-#IN THIS DO FILE: EXECUTION OF SIMULATIONS
+#IN THIS DO FILE: EXECUTION OF SIMULATIONS. OUTPUT IS NUMBER OF SPEAKERS FOR EACH 
+#COHORT BORN BETWEEN 1901 AND 2100 AND EACH YEAR BETWEEN 2016 AND 2100.
 #CONTENT:
   #1.PACKAGES AND DATA
   #2.SET SIMULATION PARAMETERS
@@ -15,24 +16,27 @@ library(MicSim)
 library(lubridate)
 library(openxlsx)
 
-setwd("C:/Users/micha/Dropbox/Work/Projects/LinguisticDiversity/Canada/")
+setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan")
 
 #starting populations
-sp <- readRDS("Code/startingpopulations")
+sp <- readRDS("startingpopulations")
 
 #fertility parameters & function
-fert.list <- readRDS("Code/fertilityparameters")
-fert.fct <- readRDS("Code/fertilityfunction")
+fert.parameters <- readRDS("fertilityparameters")
+fert.fct <- readRDS("fertilityfunction")
 
 #mortality parameters & function
-inuit.list <- readRDS("Code/mortalityparameters")[[1]]
-indian.list <- readRDS("Code/mortalityparameters")[[2]]
+inuit.list <- readRDS("mortalityparameters")[[1]]
+indian.list <- readRDS("mortalityparameters")[[2]]
 
-mort.inuit <- readRDS("Code/mortalityfunctions")[[1]]
-mort.indian <- readRDS("Code/mortalityfunctions")[[2]]
+mort.inuit <- readRDS("mortalityfunctions")[[1]]
+mort.indian <- readRDS("mortalityfunctions")[[2]]
 
 #intergenerational transmission, slope, & population number
-int.nb <- readRDS("Code/int.nb")
+int.nb <- readRDS("inttrans")
+
+#languages
+languages <- unique(sp$language)
 
 ################################################################################
 #SET SIMULATION PARAMETERS
@@ -88,7 +92,7 @@ overlappingcohorts <- function(x,y){
     df <- filter(sp,age==rev(age)[z],language==languages[y])
     
     #slope for int. trans.
-    slope <- df$slope
+    slope <- filter(int.nb,language==languages[y])$slope
     
     #group size
     n <- round(df$speaker)
@@ -113,7 +117,7 @@ overlappingcohorts <- function(x,y){
                                maxAge=maxAge,
                                simHorizon=simHorizon,
                                fertTr=fertTr,
-                               cores=8,
+                               cores=2,
                                seeds=round(runif(1,min=0, max=10^10)))
       
       #convert ID number to numeric
@@ -146,9 +150,6 @@ overlappingcohorts <- function(x,y){
     
     #Define simulation horizon
     simHorizon <- setSimHorizon(startDate=birth.dates.cat[z+23], endDate="31/Dec/2100")
-    
-    #slope for int. trans.
-    slope <- unique(filter(sp,language==languages[y])$slope)
     
     #cohort size
     n <- sum(filter(transientpop[[z]],language==languages[y],period5==z*5+2011)$births)
@@ -202,7 +203,7 @@ overlappingcohorts <- function(x,y){
     
   }
 
-  saveRDS(transientpop[[18]],paste("Results/finalpop",languages[y],x,sep=""))
+  saveRDS(transientpop[[18]],paste("finalpop",languages[y],x,sep=""))
   
 }
 
@@ -210,7 +211,7 @@ overlappingcohorts <- function(x,y){
 #EXECUTE SIMULATIONS
 ################################################################################
 #specify number of runs
-runs <- 3
+runs <- 1
 
-#run simulations
-lapply(runs,function(a) lapply(c(28,9,34,46,35,51,37), function(b) overlappingcohorts(a,b)))
+#run simulations (b specifies the language number for which we run the simulation)
+lapply(runs,function(a) lapply(c(4), function(b) overlappingcohorts(a,b)))

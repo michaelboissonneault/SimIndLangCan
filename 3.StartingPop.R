@@ -8,7 +8,7 @@
   #2. DATA ON SPEAKER NUMBERS
     #2.1 YEAR 2016: https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/Rp-eng.cfm?LANG=E&APATH=3&DETAIL=0&DIM=0&FL=A&FREE=0&GC=0&GID=0&GK=0&GRP=1&PID=112132&PRID=10&PTYPE=109445&S=0&SHOWALL=0&SUB=0&Temporal=2017&THEME=122&VID=0&VNAMEE=&VNAMEF=
     #2.2 YEAR 2011: https://www12.statcan.gc.ca/census-recensement/2011/dp-pd/tbt-tt/Lp-eng.cfm?LANG=E&APATH=3&DETAIL=1&DIM=0&FL=A&FREE=0&GC=0&GID=0&GK=0&GRP=1&PID=0&PRID=0&PTYPE=101955&S=0&SHOWALL=0&SUB=0&Temporal=2011&THEME=90&VID=0&VNAMEE=&VNAMEF=
-    #2.3 YEARS 2016 & 2011
+    #2.3 MERGE OF 2016 & 2011
   #3. INTERPOLATION & SMOOTHING OF AGE STRUCTURE 
   #4. SAVE
 ################################################################################
@@ -22,7 +22,7 @@ library(lubridate)
 library(openxlsx)
 
 #Set directory
-setwd("C:/Users/micha/Dropbox/Work/Projects/LinguisticDiversity/Canada/")
+setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan")
 
 #set ggplot2 theme for consistency
 theme_set(theme_bw())  
@@ -35,7 +35,7 @@ theme_set(theme_bw())
 dataname <- c(4853,4908,4928,5012,5032,5056,5114,5131)
 
 #download by age group and put into vector (one column for all info, including language names)
-ms16 <- unlist(lapply(1:8,function(x) read.csv(paste("Data/1121322021092602",dataname[x],".CSV",sep=""))[-c(1:34,367:380),]))
+ms16 <- unlist(lapply(1:8,function(x) read.csv(paste("1121322021092602",dataname[x],".CSV",sep=""))[-c(1:34,367:380),]))
 
 #put in data frame
 ms16 <- data.frame(label=c("language","total","single","multiple"),speaker=ms16)
@@ -70,7 +70,7 @@ ms16$year <- 2016
 dataname <- c(618,734,753,812,834,855)
 
 #download by age group and merge
-ms11 <- bind_rows(lapply(1:6,function(x) read.csv(paste("Data/10325120210909034",dataname[x],".CSV",sep=""),header=F)[9:73,c(1,3)]))
+ms11 <- bind_rows(lapply(1:6,function(x) read.csv(paste("10325120210909034",dataname[x],".CSV",sep=""),header=F)[9:73,c(1,3)]))
 
 #rename variables
 ms11 <- rename(ms11,language=V1)
@@ -111,7 +111,7 @@ ms11 <- mutate(ms11,
 #merge two datasets
 ms <- bind_rows(ms11,ms16)
 
-#2.3 2016 & 2011 ################################################################
+#2.3 Merging 2016 & 2011 ################################################################
 #identify the values with n.o.s. or n.i.e., or groups
 ms$nos <- ifelse(str_detect(ms$language,"n.o.s.")==TRUE,1,0)
 ms$nie <- ifelse(str_detect(ms$language,"n.i.e.")==TRUE,1,0)
@@ -328,6 +328,6 @@ sp <- agedist %>% group_by(language, age) %>% summarise(speaker=mean(model))
 #############################################################################
 #4.SAVE
 #############################################################################
-saveRDS(sp,"Code/startingpopulations")
+saveRDS(sp,"startingpopulations")
 
 #END OF DO FILE#################################################################
