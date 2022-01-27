@@ -8,6 +8,7 @@ library(tidyverse)
 library(MicSim)
 library(lubridate)
 library(openxlsx)
+library(cowplot)
 
 rm(list=ls())
 
@@ -19,124 +20,96 @@ sp <- readRDS("startingpopulations")
 #languages
 languages <- unique(sp$language)
 
+#intergenerational transmission, slope, & population number
+int.nb <- readRDS("inttrans")
+
+#simulation results
+results <- readRDS("first25_30runs")
 ################################################################################
-#RESULTS
+#LANGUAGE PROFILES
 ################################################################################
-#load results
-finalpop <- bind_rows(lapply(1, function(a) lapply(4,function(b)
-  readRDS(paste("finalpop",languages[b],a,sep=""))
-)))
+#number of speakers by year
+simres <- results %>% group_by(period,language,run) %>% summarise(alive=sum(alive),births=sum(births))
 
-#Data frame with speaker number and number of births                     
-results <- finalpop %>% group_by(period,language,run) %>% summarise(alive=sum(alive),births=sum(births))
-results$alive <- ifelse(results$alive==0,NA,results$alive)
-results <- arrange(results,language)
+#5 year periods
+simres$period5 <- floor((simres$period-1)/5)*5+1
 
-#Plot
-ggplot(results,aes(period,alive,group=run))+
-  geom_line()+
-  facet_wrap(~language,scales = "free")+
-  theme_minimal()
+#language number (1 to n)
+int.nb$number <- 1:length(int.nb$language)
 
-#speakers in 2100 
-results %>% group_by(language) %>% filter(period==2100) %>% 
-  summarise(mean2100=mean(alive),
-            lower= mean(alive)-1.96*sd(alive)/sqrt(max(results$run)),
-            upper= mean(alive)+1.96*sd(alive)/sqrt(max(results$run)))
+#take 25 smallest languages
+first25 <- int.nb %>% arrange(speaker) %>% slice(1:25)
 
-################################################################################
-#RESULTS BASED ON LEI SCALE
-################################################################################
-#based on 1 run for now
-res1 <- filter(results,run==1)
+#Function to create plots########################################
 
-#speaker number 
-res1 <- mutate(res1,number = case_when(
-  alive >= 10^5 ~ "0.Safe",
-  alive < 10^5 & alive>= 10^4 ~ "1.Vulnerable",
-  alive <  10^4 & alive>=10^3 ~ "2.Threatened",
-  alive < 10^3 & alive>=10^2 ~ "3.Endangered",
-  alive <10^2 & alive > 10 ~ "4.Severely Endangered",
-  alive < 10 & alive >=1 ~ "5.Critically Endangered",
-  is.na(alive) ~ "6.Dead"
-))
-
-#transmission
-res1 <- res1 %>% group_by(language) %>%
-  mutate(birthslag5 = lag(births,5),
-         birthslag25 = lag(births,25),
-         birthslag50 = lag(births,50),
-         birthslag75 = lag(births,75))
-
-res1$birthrate <- res1$birthslag5/res1$alive
-
-res1 <- mutate(res1,transmission = case_when(
-  birthrate>0.05 ~ "0.Safe",
-  birthrate<0.05 & birthslag5>0 ~ "1.Vulnerable",
-  birthslag5==0 & birthslag25>0 ~ "2.Threatened",
-  birthslag25==0 & birthslag50>0 ~ "3.Endangered",
-  birthslag50==0 & birthslag75>0 ~ "4.Severely Endangered",
-  birthslag75==0 & alive>=1 ~ "5.Critically Endangered",
-  is.na(alive) ~ "6.Dead"
-))
-
-
-#lagged speaker numbers
-res1 <- res1 %>% group_by(language) %>% mutate(alivelag = lag(alive,20))
-res1$trendvar <- res1$alive / res1$alivelag
-
-#trend
-res1 <- mutate(res1,trend = case_when(
-  trendvar >=.95 ~ "0.Safe",
-  trendvar <.95 & trendvar>=0.8 ~ "1.vulnerable",
-  trendvar <0.8 & trendvar >=0.65 ~ "2.Threatened",
-  trendvar <0.65 & trendvar >=0.5 ~ "3.Endangered",
-  trendvar <0.5 & trendvar >=0.35 ~ "4.Severely Endangered",
-  trendvar <0.35 ~ "5.Critically Endangered",
-  is.na(alive) ~ "6.Dead"
+plots <- function(n){
   
-))
+  ##name
+  name <- first25$language[n]
+  
+  #projection results
+  projection <- filter(simres,language==name)
+  
+  #average across runs
+  projection <- left_join(projection,projection %>% group_by(period) %>% summarise(average=mean(alive)),by="period")
+  
+  #rate of intergenational transmission
+  projection <- left_join(projection,projection %>% group_by(period5) %>% summarise(itr=mean(births)/mean(alive)*1000),by="period5")
+  
+  #age distribution
+  agedist <- filter(sp,language==name)
+  agedist$speaker <- round(agedist$speaker)
+  
+  #initial size
+  size1 <- round(filter(int.nb,language==name)$speaker)
+  
+  #final size
+  size2 <- unique(round(filter(projection,period==2100)$average))
+  minyr2100 <- min(filter(projection,period==2100)$alive)
+  maxyr2100 <- max(filter(projection,period==2100)$alive)
+  
+  #dormancy
+  dormancy <- round(length(filter(projection,period==2100,alive==0)$language)/max(projection$run),2)
+  
+  #plot trends
+  trends <- ggplot(projection,aes(period,alive,group=run))+
+    geom_line(color="grey")+
+    geom_line(aes(period,average))+
+    theme_bw()+
+    xlab("Year")+
+    ylab("Number of speakers")
+  
+  #plot age distribution
+  pyramid <- ggplot(agedist,aes(age,speaker))+
+    geom_col()+
+    coord_flip()+
+    theme_bw()+
+    ylab("Number of speakers")+
+    xlab("Age")+
+    scale_x_continuous(breaks=c(seq(0,100,20)))
+  
+  #plot intergenerational transmission rate
+  itr <- ggplot(projection,aes(period5,itr))+
+    geom_line()+
+    theme_bw()+
+    xlab("Year")+
+    ylab("Rate (x 1,000)")+
+    scale_y_continuous(limits=c(0,25))
 
-#overall
-res1 <- mutate(res1,overall1 = case_when(
-  number=="0.Safe" ~ 0,
-  number=="1.Vulnerable" ~ 1,
-  number=="2.Threatened" ~ 2,
-  number=="3.Endangered" ~ 3,
-  number=="4.Severely Endangered" ~ 4,
-  number=="5.Critically Endangered" ~ 5
-))
+  info <- paste(name,"\nSpeakers in 2016: ",size1,"\nSpeakers in 2100: ",size2," (",minyr2100,"-",maxyr2100,")\nDormancy risk in 2100: ",dormancy,sep="")
+  
+  #arrange in grid
+  plot_grid(trends,pyramid,NULL,itr,
+            labels=c("Trends",
+                     "Distribution by age in year 2016",
+                     info,
+                     "Intergenerational transmission rate"),
+            ncol=2,rel_heights=c(3,2))
+  
+  ggsave(paste(name,".tiff",sep=""),height=7,width=12)
+  
+  }
 
-res1 <- mutate(res1,overall2 = case_when(
-  transmission=="0.Safe" ~ 0,
-  transmission=="1.Vulnerable" ~ 1,
-  transmission=="2.Threatened" ~ 2,
-  transmission=="3.Endangered" ~ 3,
-  transmission=="4.Severely Endangered" ~ 4,
-  transmission=="5.Critically Endangered" ~ 5
-))
+lapply(1:25,function(x) plots(x))
 
-res1 <- mutate(res1,overall3 = case_when(
-  trend=="0.Safe" ~ 0,
-  trend=="1.Vulnerable" ~ 1,
-  trend=="2.Threatened" ~ 2,
-  trend=="3.Endangered" ~ 3,
-  trend=="4.Severely Endangered" ~ 4,
-  trend=="5.Critically Endangered" ~ 5
-))
-
-res1 <- left_join(res1,res1 %>% group_by(language,period) %>% summarise(score=(overall1 + overall2*2 + overall3)/20),by=c("language","period"))
-
-res1 <- mutate(res1,overall = case_when(
-  score==0 ~ "0.Safe",
-  score>0 & score <=.2 ~ "1.Vulnerable",
-  score>.2 & score <=.4 ~ "2.Threatened",
-  score>.4 & score <=.6 ~"3.Endangered",
-  score>.6 & score <=.8 ~"4.Severely Endangered",
-  score>.8 ~"5.Critically Endangered",
-  is.na(score) ~ "6.Dead"
-))
-
-table <- res1 %>% filter(period==2100) %>% select(language,number,transmission,trend,overall)
-
-table(table$overall)
+#######################################################################################################
