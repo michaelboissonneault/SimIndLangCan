@@ -32,10 +32,10 @@ theme_set(theme_bw())
 ################################################################################
 #2.1 Year 2016##################################################################
 #vector to scroll through when reading the data
-dataname <- c(4853,4908,4928,5012,5032,5056,5114,5131)
+dataname <- c(10926024853,20210083911,10926024928,10926025012,10926025032,10926025056,10926025114,10926025131)
 
 #download by age group and put into vector (one column for all info, including language names)
-ms16 <- unlist(lapply(1:8,function(x) read.csv(paste("1121322021092602",dataname[x],".CSV",sep=""))[-c(1:34,367:380),]))
+ms16 <- unlist(lapply(1:8,function(x) read.csv(paste("112132202",dataname[x],".CSV",sep=""))[-c(1:34,367:380),]))
 
 #put in data frame
 ms16 <- data.frame(label=c("language","total","single","multiple"),speaker=ms16)
@@ -165,71 +165,116 @@ ms <- mutate(ms,subfamily=case_when(
   language=="North Slavey" | language=="South Slavey" | language=="Slavey, n.o.s." ~ "Slavey"
 ))
 
+#function to attribute speakers to 5 year age categories 
+fivyrcat.fct <- function(x,y,z){
+  
+  #language
+  lang <- unique(ms$language)[z]
+  
+  #select information in data frame based on age, language and year
+  df <- ms %>% filter(agelo==x,language==lang,year==y)
+  
+  #calculate width of age category
+  w <- (df$agehi-df$agelo+1)/5
+  
+  #make data frame with 5-year age categories
+  df <- data.frame(language=rep(lang,w),
+                   speaker=rep(sum(df$speaker)/w,w),
+                   age=c(seq(df$agelo,df$agehi,5)),
+                   year=y,
+                   group=sum(df$nos+df$nie+df$group+df$total),
+                   family=df$family,
+                   subfamily=df$subfamily)
+  } 
+
+#vectors to scroll through
+agev <- unique(filter(ms,year==2016)$agelo)
+langv <- unique(filter(ms,year==2016)$language)
+
+#apply function to data from year 2016
+fivyrcat.list.2016 <- lapply(agev, function(x)
+                             lapply(langv, function(z) fivyrcat.fct(x,2016,z))) 
+
+#######
+ms <- 
+
+fiveyearcat16 <- ms %>% filter(agelo==0,year==2016) %>% 
+  group_by(language) %>% 
+  summarise(age_0=speaker/3,age_5=speaker/3,age_10=speaker/3,family=family,subfamily=subfamily,grouping=sum(nos,nie,group,total))
+
+
+age15year16 <- ms %>% filter(agelo==15,year==2016) %>% group_by(language) %>% summarise(age_0=speaker/2,age_5=speaker/3,age_10=speaker/3,family=family,subfamily=subfamily,grouping=sum(nos,nie,group,total))
+age25year16 <- ms %>% filter(agelo==25,year==2016) %>% group_by(language) %>% summarise(age_0=speaker/2,age_5=speaker/3,age_10=speaker/3,family=family,subfamily=subfamily,grouping=sum(nos,nie,group,total))
+age35year16 <- ms %>% filter(agelo==35,year==2016) %>% group_by(language) %>% summarise(age_0=speaker/2,age_5=speaker/3,age_10=speaker/3,family=family,subfamily=subfamily,grouping=sum(nos,nie,group,total))
+age45year16 <- ms %>% filter(agelo==45,year==2016) %>% group_by(language) %>% summarise(age_0=speaker/2,age_5=speaker/3,age_10=speaker/3,family=family,subfamily=subfamily,grouping=sum(nos,nie,group,total))
+age55year16 <- ms %>% filter(agelo==55,year==2016) %>% group_by(language) %>% summarise(age_0=speaker/2,age_5=speaker/3,age_10=speaker/3,family=family,subfamily=subfamily,grouping=sum(nos,nie,group,total))
+age65year16 <- ms %>% filter(agelo==65,year==2016) %>% group_by(language) %>% summarise(age_0=speaker/2,age_5=speaker/3,age_10=speaker/3,family=family,subfamily=subfamily,grouping=sum(nos,nie,group,total))
+age75year16 <- ms %>% filter(agelo==75,year==2016) %>% group_by(language) %>% summarise(age_0=speaker/3,age_5=speaker/3,age_10=speaker/3,family=family,subfamily=subfamily,grouping=sum(nos,nie,group,total))
+
+filter(ms,agelo==0,year==2016)$speaker/3
+
 #total speakers by family
-totbyfam <- ms %>% group_by(family,agelo,year) %>% filter(nos==0,nie==0) %>% summarise(speakerfam=sum(speaker))
+#totbyfam <- ms %>% group_by(family,agelo) %>% filter(nos==0,nie==0) %>% summarise(speakerfam=sum(speaker))
 
 #total speakers not included in a specific language
-totnie <- ms %>% filter(nie==1) %>% select(speaker,family,agelo,year)
+#totnie <- ms %>% filter(nie==1) %>% select(speaker,family,agelo,year)
 
 #remove na's
-totnie <- totnie[complete.cases(totnie),]
+#totnie <- totnie[complete.cases(totnie),]
 
 #change speaker variable name
-totnie <- rename(totnie,speakernie=speaker)
+#totnie <- rename(totnie,speakernie=speaker)
 
 #merge to main dataset
-ms <- left_join(ms,totbyfam)
-ms <- left_join(ms,totnie)
+#ms <- left_join(ms,totbyfam)
+#ms <- left_join(ms,totnie)
 
 #speaker proportion in family
-ms$propinfam <- ms$speaker / ms$speakerfam
+#ms$propinfam <- ms$speaker / ms$speakerfam
 
 #new speaker number with non-assigned speakers
-ms$speakernew <- ms$speaker + ms$propinfam * ms$speakernie
+#ms$speakernew <- ms$speaker + ms$propinfam * ms$speakernie
 
 #total speakers by subfamily
-totbysubfam <- ms %>% group_by(subfamily,agelo,year) %>% filter(nos==0,nie==0) %>% summarise(speakersubfam=sum(speaker))
+#totbysubfam <- ms %>% group_by(subfamily,agelo,year) %>% filter(nos==0,nie==0) %>% summarise(speakersubfam=sum(speaker))
 
 #total speakers not otherwise specified
-totnos <- ms %>% filter(nos==1) %>% select(speaker,subfamily,agelo,year)
+#totnos <- ms %>% filter(nos==1) %>% select(speaker,subfamily,agelo,year)
 
 #remove na's
-totnos <- totnos[complete.cases(totnos),]
+#totnos <- totnos[complete.cases(totnos),]
 
 #change speaker variable name
-totnos <- rename(totnos,speakernos=speaker)
+#totnos <- rename(totnos,speakernos=speaker)
 
 #merge to main dataset
-ms <- left_join(ms,totbysubfam)
-ms <- left_join(ms,totnos)
+#ms <- left_join(ms,totbysubfam)
+#ms <- left_join(ms,totnos)
 
 #speaker proportion in subfamily
-ms$propinsubfam <- ms$speaker / ms$speakersubfam
+#ms$propinsubfam <- ms$speaker / ms$speakersubfam
 
 #new speaker number with non-assigned speakers
-ms$speakernew <- ifelse(!is.na(ms$speakernos), ms$speakernew + ms$propinsubfam * ms$speakernos,ms$speakernew)
+#ms$speakernew <- ifelse(!is.na(ms$speakernos), ms$speakernew + ms$propinsubfam * ms$speakernos,ms$speakernew)
 
 #round new speaker number
-ms$speakernew <- round(ms$speakernew)
+#ms$speakernew <- round(ms$speakernew)
 
 #replace na cells
-ms$speakernew <- ifelse(is.na(ms$speakernew),ms$speaker,ms$speakernew)
+#ms$speakernew <- ifelse(is.na(ms$speakernew),ms$speaker,ms$speakernew)
 
 #remove total categories
-ms <- ms %>% filter(group==0)
+#ms <- ms %>% filter(group==0)
 
 #keep only necessary information
-ms <- ms %>% filter(nos==0,nie==0) %>% select(language,speaker,speakernew,agelo,agehi,year,family)
+#ms <- ms %>% filter(nos==0,nie==0) %>% select(language,speaker,speakernew,agelo,agehi,year,family)
 
 #Select languages that appear in both years
-languages <- sort(intersect(unique(filter(ms,year==2011)$language),
-                            unique(filter(ms,year==2016)$language)))
+#languages <- sort(intersect(unique(filter(ms,year==2011)$language),
+#                            unique(filter(ms,year==2016)$language)))
 
 #number of different languages
 k <- length(languages)
-
-#garbage collection
-gc() 
 
 ################################################################################
 #3. INTERPOLATION & SMOOTHING OF AGE STRUCTURE
@@ -255,36 +300,33 @@ n11 <- lapply(1:k,function(x) c(rep(li11[[x]]$speakernew[1]/3,3),
                                 rep(li11[[x]]$speakernew[5]/2,2),
                                 rep(li11[[x]]$speakernew[6]/3,3),rep(0,5)))
 
+#create single vector for both years
+n <- lapply(1:k,function(x) n16[[x]] + n11[[x]])
 
 #create age vector
 age <- seq(0,110,5)
 
-#estimate loess model
-smooth16 <- lapply(1:k, function(x) unlist(predict(loess(n16[[x]] ~ age,span=0.5))))
-smooth11 <- lapply(1:k, function(x) unlist(predict(loess(n11[[x]] ~ age,span=0.5))))
+#estimate loess model on the total of both years (instead of separately)
+smooth <- lapply(1:k, function(x) unlist(predict(loess(n[[x]] ~ age,span=0.5)))/2)
 
 #replace negative values with 0
-smooth16 <- lapply(1:k, function(x) ifelse(smooth16[[x]]<0,0,smooth16[[x]]))
-smooth11 <- lapply(1:k, function(x) ifelse(smooth11[[x]]<0,0,smooth11[[x]]))
-
-#replace smoothed values above 0 when observed values are at 0 and age below 20 or above 95
-smooth16 <- lapply(1:k, function(x) ifelse(smooth16[[x]]>0 & n16[[x]]==0 & (age<20 | age>=95),0,smooth16[[x]]))
-smooth11 <- lapply(1:k, function(x) ifelse(smooth11[[x]]>0 & n11[[x]]==0 & (age<20 | age>=95),0,smooth11[[x]]))
+smooth <- lapply(1:k, function(x) ifelse(smooth[[x]]<0,0,smooth[[x]]))
 
 #put everything in data frames
 agedist <- bind_rows(
   data.frame(language=rep(languages,each=length(age)),
              age=age,
-             model=unlist(smooth11),
+             model=unlist(smooth),
              data=unlist(n11),
              year=2011),
   data.frame(language=rep(languages,each=length(age)),
              age=age,
-             model=unlist(smooth16),
+             model=unlist(smooth),
              data=unlist(n16),
              year=2016)
 )
 
+#attribute a number to languages
 agedist$lang_nb <- rep(1:length(languages),each=length(age))
 
 #check model against data
