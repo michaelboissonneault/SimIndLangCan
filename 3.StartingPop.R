@@ -5,12 +5,13 @@
 #TRANSMISSION RATES (CALCULATIONS OF INTERGEN. TRANS. ITSELF IN OTHER DO FILE)
 #CONTENT:
   #1. PACKAGES & DIRECTORY
-  #2. DATA ON SPEAKER NUMBERS
+  #2. LOAD AND CLEAN DATA ON SPEAKER NUMBERS 
     #2.1 YEAR 2016: https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/Rp-eng.cfm?LANG=E&APATH=3&DETAIL=0&DIM=0&FL=A&FREE=0&GC=0&GID=0&GK=0&GRP=1&PID=112132&PRID=10&PTYPE=109445&S=0&SHOWALL=0&SUB=0&Temporal=2017&THEME=122&VID=0&VNAMEE=&VNAMEF=
     #2.2 YEAR 2011: https://www12.statcan.gc.ca/census-recensement/2011/dp-pd/tbt-tt/Lp-eng.cfm?LANG=E&APATH=3&DETAIL=1&DIM=0&FL=A&FREE=0&GC=0&GID=0&GK=0&GRP=1&PID=0&PRID=0&PTYPE=101955&S=0&SHOWALL=0&SUB=0&Temporal=2011&THEME=90&VID=0&VNAMEE=&VNAMEF=
-    #2.3 MERGE OF 2016 & 2011
-  #3. INTERPOLATION & SMOOTHING OF AGE STRUCTURE 
-  #4. SAVE
+  #3. DIVIDE SPEAKER NUMBERS INTO 5-YEAR AGE CATEGORIES, ATTRIBUTE NON-ATTRIBUTED SPEAKERS
+  #4. INTERPOLATION & SMOOTHING OF THE AGE STRUCTURES
+  #5. CALCULATION OF INTERGENERATIONAL TRANSMISSION RATES
+  #6. SAVE
 ################################################################################
 #1.PACKAGES & DIRECTORY
 ################################################################################
@@ -28,7 +29,7 @@ setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan")
 theme_set(theme_bw())  
 
 ################################################################################
-#2. DATA ON SPEAKER NUMBERS
+#2. LOAD AND CLEAN DATA ON SPEAKER NUMBERS 
 ################################################################################
 #2.1 Year 2016##################################################################
 #vector to scroll through when reading the data
@@ -65,7 +66,7 @@ ms16$agehi <- rep(c(14,seq(24,84,10)),each=length(unique(ms16$language)))
 #add year
 ms16$year <- 2016
 
-#2.1 Year 2011######################################################################
+#2.2 Year 2011######################################################################
 #vectors to scroll through when reading the data
 dataname <- c(618,734,753,812,834,855)
 
@@ -111,6 +112,10 @@ ms11 <- mutate(ms11,
 #merge two datasets
 ms <- bind_rows(ms11,ms16)
 
+#########################################################################################
+#3. DIVIDE SPEAKER NUMBERS INTO 5-YEAR AGE CATEGORIES, ATTRIBUTE NON-ATTRIBUTED SPEAKERS
+#########################################################################################
+#2.3 Years 2016 and 2011#################################################################
 #function to attribute speakers to 5 year age categories 
 fvyr.fct <- function(x,y,z){
   
@@ -168,9 +173,9 @@ broadspeaker <-
   bind_rows(
   lapply(1:length(broad),function(x) 
   fvyr %>% 
-  group_by(age) %>% 
+  group_by(age,year) %>% 
   filter(str_detect(language,paste(broad[x],", n.o.s.",sep=""))|str_detect(language,paste(broad[x],", n.i.e.",sep=""))) %>% 
-  summarise(speaker=sum(speaker),name=str_remove(broad[x]," languages"))))
+  summarise(speaker=sum(speaker),name=str_remove(broad[x]," languages")))) 
 
 #remove broad categories from main dataset
 fvyr <- filter(fvyr,!str_detect(language,"languages"),!str_detect(language,"n.o.s."),!str_detect(language,"n.i.e."))
@@ -186,11 +191,10 @@ fvyr_apart <- fvyr %>%
 
 #make data set with both years
 fvyr <- fvyr %>% 
-  filter(language!=in16not11[1],language!=in16not11[2],language!=in16not11[3],language!=in16not11[4],language!=in16not11[5] ) %>%
-  group_by(language,age) %>% summarise(speaker=sum(speaker)/2)
-
+  filter(language!=in16not11[1],language!=in16not11[2],language!=in16not11[3],language!=in16not11[4],language!=in16not11[5] )
+  
 #merge back with those set apart
-fvyr <- bind_rows(fvyr,select(fvyr_apart,-year))
+fvyr <- bind_rows(fvyr,fvyr_apart)
 
 #add information about language family 
 fvyr <- mutate(fvyr, family=case_when(
@@ -233,18 +237,14 @@ fvyr <- mutate(fvyr,subfamily=case_when(
   
   ))
 
-#Total of speakers in all aboriginal languages, by age
-fvyr <- left_join(fvyr, fvyr %>% group_by(age) %>% summarise(speaker_aboriginal=sum(speaker)))
+#Total of speakers in all aboriginal languages, by age and year
+fvyr <- left_join(fvyr, fvyr %>% group_by(age,year) %>% summarise(speaker_aboriginal=sum(speaker)))
 
-#Total of speakers in the family, by age
-fvyr <- left_join(fvyr,
-                     fvyr %>% group_by(age,family) %>% summarise(speaker_family=sum(speaker)),
-                     by=c("age","family"))
+#Total of speakers in the family, by age and year
+fvyr <- left_join(fvyr, fvyr %>% group_by(age,year,family) %>% summarise(speaker_family=sum(speaker)),by=c("age","year","family"))
 
-#Total of speakers in the subfamily, by age
-fvyr <- left_join(fvyr,
-                     fvyr %>% group_by(age,subfamily) %>% summarise(speaker_subfamily=sum(speaker)),
-                     by=c("age","subfamily"))
+#Total of speakers in the subfamily, by age and year
+fvyr <- left_join(fvyr, fvyr %>% group_by(age,year,subfamily) %>% summarise(speaker_subfamily=sum(speaker)), by=c("age","year","subfamily"))
 
 #Proportion to total in all aboriginal languages
 fvyr$proportion_aboriginal <- fvyr$speaker / fvyr$speaker_aboriginal
@@ -255,75 +255,107 @@ fvyr$proportion_family <- fvyr$speaker / fvyr$speaker_family
 #Proportion to total in subfamily
 fvyr$proportion_subfamily <- fvyr$speaker / fvyr$speaker_subfamily
 
-#attach non-attributed speakers, all aboriginal languages
+#Attach non-attributed speakers, all aboriginal languages
 fvyr <- left_join(fvyr,
                   broadspeaker %>% filter(name=="Aboriginal") %>% rename("nonatt_aboriginal"=speaker) %>% select(-name),
-                  by="age")
+                  by=c("age","year"))
 
 #attach non-attributed speakers by family
 fvyr <- left_join(fvyr,
                   broadspeaker %>% rename("nonatt_family"=speaker),
-                  by=c("age","family"="name"))
+                  by=c("age","year","family"="name"))
 
 #attach non-attributed speakers by subfamily
 fvyr <- left_join(fvyr,
                   broadspeaker %>% rename("nonatt_subfamily"=speaker),
-                  by=c("age","subfamily"="name"))
+                  by=c("age","year","subfamily"="name"))
 
-#drop totals
-fvyr <- select(fvyr,-starts_with("speaker_"))
-
-#total of attributed speakers
+#find total of speakers to be attributed
 fvyr <- fvyr %>% rowwise() %>% 
-  mutate(total_attributed = sum(proportion_aboriginal*nonatt_aboriginal,proportion_family*nonatt_family,proportion_subfamily*nonatt_subfamily, na.rm=T)) 
-
-#total attributed + original speaker number
-fvyr$speaker <- fvyr$speaker + fvyr$total_attributed
+  mutate(attributed=sum(c(proportion_aboriginal*nonatt_aboriginal,proportion_family*nonatt_family,proportion_subfamily*nonatt_subfamily),na.rm=T))
 
 #drop unnecessary columns
-fvyr <- fvyr %>% select(language,speaker,age) 
+fvyr <- fvyr %>% select(language,age,year,speaker,attributed) 
 
-#add zero speaker numbers ages 85, 90, 95
-fvyr <- bind_rows(fvyr,data.frame(language=rep(unique(fvyr$language),each=3),speaker=0,age=c(85,90,95)))
+#pivot longer
+fvyr <- fvyr %>% pivot_longer(c(speaker,attributed),names_to = "origin", values_to = "speaker") %>% 
+  mutate(origin = case_when(origin=="speaker" ~ "in category", origin=="attributed" ~ "attributed"))
+
+#add zero speaker numbers ages 85, 90, 95 (to help smoothing below)
+fvyr <- bind_rows(fvyr,
+                  data.frame(language=rep(unique(filter(fvyr,year==2011)$language),each=3),
+                                  age=c(85,90,95),
+                                  year=2011,
+                                  origin="in category",
+                                  speaker=0),
+                  data.frame(language=rep(unique(filter(fvyr,year==2016)$language),each=3),
+                             age=c(85,90,95),
+                             year=2016,
+                             origin="in category",
+                             speaker=0))
+                  
+#new data frame total attributed + original speaker number, mean of both years
+total <- fvyr %>% group_by(language,age,year) %>% summarise(speaker=sum(speaker)) %>%
+  group_by(language,age) %>% summarise(speaker=mean(speaker))
 
 #arrange by language
+total <- total %>% arrange(language)
 fvyr <- fvyr %>% arrange(language)
 
 ################################################################################
-#3. INTERPOLATION & SMOOTHING OF AGE STRUCTURE
+#4. INTERPOLATION & SMOOTHING OF THE AGE STRUCTURES
 ################################################################################
 #loess model
-fvyr$speaker_smooth <- unlist(lapply(unique(fvyr$language), function(x) 
-  predict(loess(speaker ~ age, span=0.5, data=filter(fvyr,language==x)))))
+total$speaker_smooth <- unlist(lapply(unique(total$language), function(x) 
+  predict(loess(speaker ~ age, span=0.5, data=filter(total,language==x)))))
 
 #replace negative values with zero
-fvyr$speaker_smooth <- ifelse(fvyr$speaker_smooth<0,0,fvyr$speaker_smooth)
+total$speaker_smooth <- ifelse(total$speaker_smooth<0,0,total$speaker_smooth)
+
+#join smoothed data to original data
+fvyr <- left_join(fvyr,select(total,language,age,speaker_smooth))
+
+#attribute numbers to languages
+fvyr <- left_join(fvyr,data.frame(language=unique(fvyr$language),nb=1:length(unique(fvyr$language))))
 
 #check fit
-ggplot(fvyr[1:(20*20),])+
+ggplot(filter(fvyr,nb<=15))+
   geom_line(aes(age,speaker_smooth))+
-  geom_col(aes(age,speaker))+
-  facet_wrap(.~language,scales="free")+
+  geom_col(aes(age,speaker,fill=origin),position="stack")+
+  facet_grid(year~language,scales="free")+
   coord_flip()
 
-ggplot(fvyr[(20*20+1):(20*20*2),])+
+ggplot(filter(fvyr,nb>15,nb<=30))+
   geom_line(aes(age,speaker_smooth))+
-  geom_col(aes(age,speaker))+
-  facet_wrap(.~language,scales="free")+
+  geom_col(aes(age,speaker,fill=origin),position="stack")+
+  facet_grid(year~language,scales="free")+
   coord_flip()
 
-ggplot(fvyr[(20*20*2+1):(20*20*4),])+
+ggplot(filter(fvyr,nb>30,nb<=44))+
   geom_line(aes(age,speaker_smooth))+
-  geom_col(aes(age,speaker))+
-  facet_wrap(.~language,scales="free")+
+  geom_col(aes(age,speaker,fill=origin),position="stack")+
+  facet_grid(year~language,scales="free")+
   coord_flip()
 
-fvyr$speaker_smooth <- ifelse(fvyr$language==lag(fvyr$language) & fvyr$speaker_smooth>0 & lag(fvyr$speaker_smooth)==0 & fvyr$age!=0,0,fvyr$speaker_smooth)
+ggplot(filter(fvyr,nb>44,nb<=58))+
+  geom_line(aes(age,speaker_smooth))+
+  geom_col(aes(age,speaker,fill=origin),position="stack")+
+  facet_grid(year~language,scales="free")+
+  coord_flip()
+
+#find the absolute error between the smoothed and actual values in relation to a language's speaker number
+fvyr$abs.err <- abs(fvyr$speaker - fvyr$speaker_smooth)
+
+#new data frame
+lang.summary <- fvyr %>% group_by(language) %>% summarise(speaker=sum(speaker),abs.err=sum(abs.err)) %>% mutate(rel.err=abs.err/speaker)
+
+arrange(lang.summary,-rel.err)
+arrange(lang.summary,rel.err)
 
 #############################################################################
-#INTERGENERATIONAL TRANSMISSION RATE
+#5. CALCULATION OF INTERGENERATIONAL TRANSMISSION RATES
 #############################################################################
-#function
+#function (the formula comes from Hauer & Schmertmann 2020 Demography)
 xITR.fct <- function(z){
   
   #number of women ages 15-49
@@ -346,11 +378,27 @@ xITR.fct <- function(z){
 xITR <- data.frame(language=unique(fvyr$language),
                    xITR=unlist(lapply(unique(fvyr$language), function(z) xITR.fct(z))))
 
+#explore distribution of xITR
 ggplot(xITR,aes(xITR))+
   geom_histogram()
 
+#relationship with population size
+xITR <- left_join(xITR, total %>% group_by(language) %>% summarise(speaker=sum(speaker_smooth)))
+
+ggplot(xITR,aes(xITR,log(speaker)))+
+  geom_point()
+
+#statistical relationship whole set
+summary(lm(xITR ~ log(speaker), data=xITR)) #adjusted R-squared = 0.09
+
+#statistical relationship languages with 150 speakers or more
+summary(lm(filter(xITR,log(speaker)>=5)$xITR ~ log(filter(xITR,log(speaker)>=5)$speaker))) #adjusted R-squared = 0.20
+
+#statistical relationship languages with 500 speakers or more
+summary(lm(filter(xITR,log(speaker)>=6.22)$xITR ~ log(filter(xITR,log(speaker)>=6.22)$speaker))) #adjusted R-squared = 0.47
+
 #############################################################################
-#4.SAVE
+#5.SAVE
 #############################################################################
 saveRDS(fvyr,"startingpopulations")
 saveRDS(xITR,"xitr")
