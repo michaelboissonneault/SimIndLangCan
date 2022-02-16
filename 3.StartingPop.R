@@ -400,7 +400,7 @@ summary(lm(filter(xITR,log(speaker)>=6.22)$xITR ~ log(filter(xITR,log(speaker)>=
 #############################################################################
 #5.SAVE
 #############################################################################
-saveRDS(fvyr,"startingpopulations")
+saveRDS(total %>% select(language,age,speaker_smooth) %>% rename(speaker=speaker_smooth),"startingpopulations")
 saveRDS(xITR,"xitr")
 
 #END OF DO FILE#################################################################
