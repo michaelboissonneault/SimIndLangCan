@@ -15,16 +15,16 @@ library(tidyverse)
 library(MicSim)
 library(lubridate)
 library(openxlsx)
-
+  
 setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan")
-
+  
 #starting populations
-sp <- readRDS("startingpopulations")
-
+sp <- readRDS("startingpopulations") 
+  
 #fertility parameters & function
 fert.parameters <- readRDS("fertilityparameters")
 fert.fct <- readRDS("fertilityfunction")
-
+  
 #mortality parameters & function
 inuit.list <- readRDS("mortalityparameters")[[1]]
 indian.list <- readRDS("mortalityparameters")[[2]]
@@ -36,7 +36,7 @@ mort.indian <- readRDS("mortalityfunctions")[[2]]
 int.nb <- readRDS("inttrans")
 
 #languages
-languages <- unique(sp$language)
+languages <- unique(int.nb$language)
 
 ################################################################################
 #SET SIMULATION PARAMETERS
@@ -54,7 +54,7 @@ stateSpace <- expand.grid(sex=sex,fert=fert)
 absStates <- c("dead")
 
 #Birth range
-birth.dates.cat <- chron(dates=c(paste("1/1/",seq(1901,2096,5),sep="")),
+birth.dates.cat <- chron(dates=c(paste("1/1/",seq(1916,2096,5),sep="")),
                          format=c(dates="d/m/Y"),out.format=c(dates="d/m/year"))
 
 #Initial state for new borns
@@ -64,7 +64,7 @@ initStates <- matrix(c("f","0"),nrow=1)
 initStatesProb <- 1
 
 #age vector
-age <- seq(0,110,5)
+age <- seq(0,95,5)
 
 ################################################################################
 #DEFINE FUNCTIONS FOR RUNNING SIMULATIONS
@@ -87,7 +87,7 @@ overlappingcohorts <- function(x,y){
   #Cohorts in 2016
   initpop <- list()
   
-  for (z in 1:23){
+  for (z in 1:20){
     
     df <- filter(sp,age==rev(age)[z],language==languages[y])
     
@@ -149,7 +149,7 @@ overlappingcohorts <- function(x,y){
   for (z in 1:17){
     
     #Define simulation horizon
-    simHorizon <- setSimHorizon(startDate=birth.dates.cat[z+23], endDate="31/Dec/2100")
+    simHorizon <- setSimHorizon(startDate=birth.dates.cat[z+20], endDate="31/Dec/2100")
     
     #cohort size
     n <- sum(filter(transientpop[[z]],language==languages[y],period5==z*5+2011)$births)
@@ -160,7 +160,7 @@ overlappingcohorts <- function(x,y){
       it <- ifelse(log10(n) * slope > 1, 1, log10(n) * slope)
       
       #generate birth dates
-      birth.dates <- dates(birth.dates.cat[z+23]) + runif(n,min=0,max=birth.dates.cat[2]-birth.dates.cat[1])
+      birth.dates <- dates(birth.dates.cat[z+20]) + runif(n,min=0,max=birth.dates.cat[2]-birth.dates.cat[1])
       
       #data frame with initial population
       initPop <- data.frame(ID=1:n,birthDate=birth.dates,initState="f/0")
@@ -211,22 +211,25 @@ overlappingcohorts <- function(x,y){
 #EXECUTE SIMULATIONS
 ################################################################################
 #specify number of runs
-runs <- 11:30
+runs <- 2:10
 
 #language number (1 to n)
 int.nb$number <- 1:length(int.nb$language)
 
-#take 25 smallest languages
-first25 <- int.nb %>% arrange(speaker) %>% slice(1:25) %>% pull(number)
+#exclude 25 smallest languages
+last26 <- int.nb %>% arrange(speaker) %>% slice(26:length(int.nb$language)) %>% pull(number)
 
 #run simulations (b specifies the language number for which we run the simulation)
 lapply(runs,function(a) 
-  lapply(first25, 
+  lapply(last26, 
          function(b) overlappingcohorts(a,b))) #simulation on 25 smaller languages
-
 #save in one dataframe
-first25.30runs <- bind_rows(lapply(1:30, function(a) lapply(first25,function(b)
+last26.1run <- bind_rows(lapply(1, function(a) lapply(last26,function(b)
   readRDS(paste("finalpop",languages[b],a,sep=""))
 )))
 
-saveRDS(first25.30runs,"first25_30runs")
+saveRDS(last26.1run,"last26_1run")
+
+overlappingcohorts(1,1)
+
+a <- readRDS("finalpopShuswap1")
