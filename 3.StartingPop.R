@@ -2,18 +2,19 @@
 #IN THIS DO FILE: TRANSFORMATION OF STATISTICS CANADA'S RAW DATA ON SPEAKERS
 #OF INDIGENOUS LANGUAGES INTO DATA THAT WILL ALLOW TO DETERMINE EACH LANGUAGE'S 
 #STARTING POPULATION IN THE SIMULATIONS AND ESTIMATE THEIR INTERGENERATIONAL 
-#TRANSMISSION RATES (CALCULATIONS OF INTERGEN. TRANS. ITSELF IN OTHER DO FILE)
+#TRANSMISSION RATES 
 #CONTENT:
-  #1. PACKAGES & DIRECTORY
+  #1. PACKAGES 
   #2. LOAD AND CLEAN DATA ON SPEAKER NUMBERS 
     #2.1 YEAR 2016: https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/dt-td/Rp-eng.cfm?LANG=E&APATH=3&DETAIL=0&DIM=0&FL=A&FREE=0&GC=0&GID=0&GK=0&GRP=1&PID=112132&PRID=10&PTYPE=109445&S=0&SHOWALL=0&SUB=0&Temporal=2017&THEME=122&VID=0&VNAMEE=&VNAMEF=
     #2.2 YEAR 2011: https://www12.statcan.gc.ca/census-recensement/2011/dp-pd/tbt-tt/Lp-eng.cfm?LANG=E&APATH=3&DETAIL=1&DIM=0&FL=A&FREE=0&GC=0&GID=0&GK=0&GRP=1&PID=0&PRID=0&PTYPE=101955&S=0&SHOWALL=0&SUB=0&Temporal=2011&THEME=90&VID=0&VNAMEE=&VNAMEF=
-  #3. DIVIDE SPEAKER NUMBERS INTO 5-YEAR AGE CATEGORIES, ATTRIBUTE NON-ATTRIBUTED SPEAKERS
-  #4. INTERPOLATION & SMOOTHING OF THE AGE STRUCTURES
-  #5. CALCULATION OF INTERGENERATIONAL TRANSMISSION RATES
-  #6. SAVE
+  #3. DIVIDE SPEAKER NUMBERS INTO 5-YEAR AGE CATEGORIES
+  #4. ATTRIBUTE NON-ATTRIBUTED SPEAKERS
+  #5. INTERPOLATION & SMOOTHING OF THE AGE STRUCTURES
+  #6. CALCULATION OF INTERGENERATIONAL TRANSMISSION RATES
+  #7. SAVE
 ################################################################################
-#1.PACKAGES & DIRECTORY
+#1.PACKAGES 
 ################################################################################
 rm(list=ls())
 
@@ -21,9 +22,6 @@ rm(list=ls())
 library(tidyverse)
 library(lubridate)
 library(openxlsx)
-
-#Set directory
-setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan")
 
 #set ggplot2 theme for consistency
 theme_set(theme_bw())  
@@ -42,10 +40,11 @@ ms16 <- unlist(lapply(1:8,function(x) read.csv(paste("112132202",dataname[x],".C
 ms16 <- data.frame(label=c("language","total","single","multiple"),speaker=ms16)
 
 #rearrange into two columns: language, single speaker number
-ms16language <- filter(ms16,label=="language")
-ms16speakers <- filter(ms16,label!="language")
-ms16 <- data.frame(language=rep(ms16language$speaker,each=3),label=ms16speakers$label,speaker=ms16speakers$speaker)
-ms16 <- ms16 %>% filter(label=="single") %>% select(language,speaker)
+ms16 <- data.frame(language=rep(filter(ms16,label=="language")$speaker,each=3),
+                   label=filter(ms16,label!="language")$label,
+                   speaker=filter(ms16,label!="language")$speaker) %>% 
+  filter(label=="single") %>% 
+  select(language,speaker)
 
 #remove trailing spaces at beginning of language names
 ms16$language <- trimws(ms16$language)
@@ -97,11 +96,7 @@ ms11$agehi <- rep(c(14,24,44,64,74,84),each=length(unique(ms11$language)))
 #add year
 ms11$year <- 2011
 
-#Compare information in 2011 and 2016
-setdiff(unique(ms16$language),unique(ms11$language))
-setdiff(unique(ms11$language),unique(ms16$language))
-
-#We take the names from 2016
+#Use the 2016 names for the 2011 dataset
 ms11 <- mutate(ms11,
                language=replace(language,language=="Wetsuweten","Babine"),
                language=replace(language,language=="Tlicho","Dogrib"),
@@ -109,46 +104,34 @@ ms11 <- mutate(ms11,
                language=replace(language,language=="Nootka","Nuu-chah-nulth"),
                language=replace(language,language=="Sarcee","Sarsi"))
 
-#merge two datasets
-ms <- bind_rows(ms11,ms16)
-
 #########################################################################################
-#3. DIVIDE SPEAKER NUMBERS INTO 5-YEAR AGE CATEGORIES, ATTRIBUTE NON-ATTRIBUTED SPEAKERS
+#3. DIVIDE SPEAKER NUMBERS INTO 5-YEAR AGE CATEGORIES
 #########################################################################################
-#2.3 Years 2016 and 2011#################################################################
 #function to attribute speakers to 5 year age categories 
-fvyr.fct <- function(x,y,z){
+fvyr.fct <- function(x,y,dta){
   
   #select information in data frame based on age, language and year
-  df <- ms %>% filter(agelo==x,year==y,language==z)
+  df <- dta %>% filter(agelo==x,language==y)
   
   #calculate width of age category
   w <- (df$agehi-df$agelo+1)/5
   
   #make data frame with 5-year age categories
-  df <- data.frame(language=rep(z,w),
+  df <- data.frame(language=rep(y,w),
                    speaker=rep(sum(df$speaker)/w,w),
                    age=c(seq(df$agelo,df$agehi,5)),
-                   year=y)
+                   year=df$year)
   } 
 
-#Year 2016: age and language vectors to scroll through
-agev <- unique(filter(ms,year==2016)$agelo)
-langv <- unique(filter(ms,year==2016)$language)
-
 #Apply function to data from year 2016
-fvyr.list.2016 <- lapply(agev, function(x)
-  lapply(langv, function(z) fvyr.fct(x,2016,z))) 
-
-#Year 2011: age and language vectors to scroll through
-agev <- unique(filter(ms,year==2011)$agelo)
-langv <- unique(filter(ms,year==2011)$language)
+fvyr.list.2016 <- lapply(unique(ms16$agelo), function(x)
+  lapply(unique(ms16$language), function(y) fvyr.fct(x,y,ms16))) 
 
 #Apply function to data from year 2011
-fvyr.list.2011 <- lapply(agev, function(x)
-  lapply(langv, function(z) fvyr.fct(x,2011,z))) 
+fvyr.list.2011 <- lapply(unique(ms11$agelo), function(x)
+  lapply(unique(ms11$language), function(y) fvyr.fct(x,y,ms11))) 
 
-#merge both years
+#merge both years in single data frame
 fvyr <- bind_rows(
   bind_rows(fvyr.list.2016),
   bind_rows(fvyr.list.2011)) 
@@ -156,6 +139,9 @@ fvyr <- bind_rows(
 #athapaskan = athabaskan
 fvyr$language <- ifelse(fvyr$language=="Athapaskan languages, n.i.e.","Athabaskan languages, n.i.e.",fvyr$language)
 
+#########################################################################################
+#4. ATTRIBUTE NON-ATTRIBUTED SPEAKERS
+#########################################################################################
 #identify broad languages categories in both years
 broad <- unique(
   c(sort(unique(filter(fvyr,str_detect(language,", n.o.s.")|str_detect(language,", n.i.e."),year==2016)$language)),
@@ -179,22 +165,6 @@ broadspeaker <-
 
 #remove broad categories from main dataset
 fvyr <- filter(fvyr,!str_detect(language,"languages"),!str_detect(language,"n.o.s."),!str_detect(language,"n.i.e."))
-
-#five languages are in the 2016 dataset but not in the 2011 one
-in16not11 <- setdiff(filter(fvyr,year==2016)$language,filter(fvyr,year==2011)$language)
-
-#Set those five languages apart
-fvyr_apart <- fvyr %>% 
-  filter(
-  language==in16not11[1] | language==in16not11[2] |language==in16not11[3] |language==in16not11[4] |language==in16not11[5] 
-)
-
-#make data set with both years
-fvyr <- fvyr %>% 
-  filter(language!=in16not11[1],language!=in16not11[2],language!=in16not11[3],language!=in16not11[4],language!=in16not11[5] )
-  
-#merge back with those set apart
-fvyr <- bind_rows(fvyr,fvyr_apart)
 
 #add information about language family 
 fvyr <- mutate(fvyr, family=case_when(
@@ -284,10 +254,10 @@ fvyr <- fvyr %>% pivot_longer(c(speaker,attributed),names_to = "origin", values_
 #add zero speaker numbers ages 85, 90, 95 (to help smoothing below)
 fvyr <- bind_rows(fvyr,
                   data.frame(language=rep(unique(filter(fvyr,year==2011)$language),each=3),
-                                  age=c(85,90,95),
-                                  year=2011,
-                                  origin="in category",
-                                  speaker=0),
+                             age=c(85,90,95),
+                             year=2011,
+                             origin="in category",
+                             speaker=0),
                   data.frame(language=rep(unique(filter(fvyr,year==2016)$language),each=3),
                              age=c(85,90,95),
                              year=2016,
@@ -303,7 +273,7 @@ total <- total %>% arrange(language)
 fvyr <- fvyr %>% arrange(language)
 
 ################################################################################
-#4. INTERPOLATION & SMOOTHING OF THE AGE STRUCTURES
+#5. INTERPOLATION & SMOOTHING OF THE AGE STRUCTURES
 ################################################################################
 #loess model
 total$speaker_smooth <- unlist(lapply(unique(total$language), function(x) 
@@ -344,16 +314,16 @@ ggplot(filter(fvyr,nb>44,nb<=58))+
   coord_flip()
 
 #find the absolute error between the smoothed and actual values in relation to a language's speaker number
-fvyr$abs.err <- abs(fvyr$speaker - fvyr$speaker_smooth)
+total$abs.err <- abs(total$speaker - total$speaker_smooth)
 
 #new data frame
-lang.summary <- fvyr %>% group_by(language) %>% summarise(speaker=sum(speaker),abs.err=sum(abs.err)) %>% mutate(rel.err=abs.err/speaker)
+lang.summary <- total %>% group_by(language) %>% summarise(speaker=sum(speaker),abs.err=sum(abs.err)) %>% mutate(rel.err=abs.err/speaker)
 
 arrange(lang.summary,-rel.err)
 arrange(lang.summary,rel.err)
 
 #############################################################################
-#5. CALCULATION OF INTERGENERATIONAL TRANSMISSION RATES
+#6. CALCULATION OF INTERGENERATIONAL TRANSMISSION RATES
 #############################################################################
 #function (the formula comes from Hauer & Schmertmann 2020 Demography)
 xITR.fct <- function(z){
@@ -367,7 +337,7 @@ xITR.fct <- function(z){
   #number of children ages 0-4
   C <- filter(fvyr,language==z,age==0)$speaker_smooth
     
-  #xITR
+  #xITR formula
   xITR <- ifelse(W==0,0,(10.65 - 12.55 * pi) * (C/W))
   
   return(xITR)
@@ -398,7 +368,7 @@ summary(lm(filter(xITR,log(speaker)>=5)$xITR ~ log(filter(xITR,log(speaker)>=5)$
 summary(lm(filter(xITR,log(speaker)>=6.22)$xITR ~ log(filter(xITR,log(speaker)>=6.22)$speaker))) #adjusted R-squared = 0.47
 
 #############################################################################
-#5.SAVE
+#7.SAVE
 #############################################################################
 saveRDS(total %>% select(language,age,speaker_smooth) %>% rename(speaker=speaker_smooth),"startingpopulations")
 saveRDS(xITR,"xitr")
