@@ -5,15 +5,11 @@
 ##LOAD PACKAGES, SET DIRECTORY, LOAD RESULTS
 ################################################################################
 library(tidyverse)
-library(MicSim)
-library(lubridate)
 library(openxlsx)
 library(cowplot)
 library(lcmm)
 
 rm(list=ls())
-
-setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan")
 
 #set ggplot2 theme for consistency
 theme_set(theme_bw())  
@@ -25,10 +21,12 @@ sp <- readRDS("startingpopulations")
 languages <- unique(sp$language)
 
 #intergenerational transmission, slope, & population number
-int.nb <- readRDS("inttrans")
+int.nb <- readRDS("xitr")
 
 #simulation results
-results <- readRDS("first25_30runs")
+results <- bind_rows(
+  readRDS("first25_30runs"),
+  readRDS("last26_3runs"))
 
 ################################################################################
 #LANGUAGE PROFILES
@@ -36,6 +34,11 @@ results <- readRDS("first25_30runs")
 #number of speakers by year
 simres <- results %>% group_by(period,language,run) %>% summarise(alive=sum(alive),births=sum(births))
 
+#plot
+ggplot(simres,aes(period,alive,group=run))+
+  geom_line()+
+  facet_wrap(.~language,scales="free")
+  
 #5 year periods
 simres$period5 <- floor((simres$period-1)/5)*5+1
 
@@ -45,12 +48,15 @@ int.nb$number <- 1:length(int.nb$language)
 #take 25 smallest languages
 first25 <- int.nb %>% arrange(speaker) %>% slice(1:25)
 
+#or 26 largest
+last26 <- int.nb %>% arrange(speaker) %>% slice(26:51)
+
 #Function to create plots########################################
 
 plots <- function(n){
   
   ##name
-  name <- first25$language[n]
+  name <- last26$language[n]
   
   #projection results
   projection <- filter(simres,language==name)
@@ -115,7 +121,7 @@ plots <- function(n){
   
   }
 
-lapply(1:25,function(x) plots(x))
+lapply(1:26,function(x) plots(x))
 
 #######################################################################################################
 ############################################################
@@ -129,7 +135,7 @@ trajectories <- left_join(simres %>% group_by(period5,language) %>% summarise(av
 trajectories$proportion <- round(trajectories$average / trajectories$alive2016 *100, 1)
 
 #add language number
-trajectories$nb <- rep(1:25,85/5)
+trajectories$nb <- rep(1:51,85/5)
 
 #reconvert year to years after 2016
 trajectories$period0 <- trajectories$period5-2016
@@ -175,12 +181,14 @@ results <- left_join(results,select(trajectories,period5,proportion,group,nb))
 
 #plot
 ggplot(results)+
-  geom_line(aes(period5,predicted,group=group,color=group),size=1)+
   geom_line(aes(period5,proportion,group=nb),color="grey")+
+  geom_line(aes(period5,predicted,group=group,color=group),size=1.5)+
   geom_line(aes(period5,lower,group=group,color=group),linetype="dashed")+
   geom_line(aes(period5,upper,group=group,color=group),linetype="dashed")+
-  ylab("Change in the number of speakers \n (proportional to the initial population size)")+
+  ylab("Change in the number of speakers\n(% of the initial population size)")+
   xlab("Year")
+
+ggsave("trajectories.tiff",height=6,width=8)
 
 #breakdown by group        
 table(model3splines$pprob[,2])
@@ -228,9 +236,10 @@ ggplot(results)+
   geom_line(aes(period5,predicted,group=group,color=group),size=1)+
   geom_line(aes(period5,proportion,group=nb),color="grey")+
   geom_line(aes(period5,lower,group=group,color=group),linetype="dashed")+
-  geom_line(aes(period5,upper,group=group,color=group),linetype="dashed")+
+  geom_line(aes(period5,upper,group=group,color=group),linetypea="dashed")+
   ylab("Change in the number of speakers \n (proportional to the initial population size)")+
   xlab("Year")
+
 
 #breakdown by group        
 table(model3splines$pprob[,2])
