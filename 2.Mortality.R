@@ -8,12 +8,17 @@
 #CORRESPOND TO THE LIFE EXPECTANCY IN THE UN PROJECTIONS.
 #CONTENT:
   #1.PACKAGES AND DATA
-  #2.PARAMETER ESTIMATION
-  #3.DEFINITION OF FUNCTIONS
-  #4.SAVE PARAMETERS AND FUNCTION
-  #5.SIMULATIONS
+  #2.INUIT POPULATION
+    #2.1 PARAMETER ESTIMATES
+    #2.2 SIMULATION 
+    #2.3 FUNCTION
+  #3.INDIAN POPULATION
+    #3.1 PARAMETER ESTIMATES
+    #3.2 SIMULATION 
+    #3.3 FUNCTION
+  #4.SAVE 
 ################################################################################
-#1.DIRECTORY, PACKAGES AND DATA
+#1.PACKAGES AND DATA
 ################################################################################
 rm(list=ls())
 
@@ -58,11 +63,11 @@ y <- seq(2018,2098,5)
 ################################################################################
 #3.INUIT POPULATION
 ################################################################################
-#3.1 PARAMETER ESTIMATION#######################################################
+#3.1 PARAMETER ESTIMATES#######################################################
 qx <- lapply(y, function(x) 
   filter(wpp2019lt,Location=="Lower-middle-income countries",Sex=="Total",MidPeriod==x)$qx)
 
-#Kannisto-Makeham model with loss function LF6 provides OK fit (especially at older ages) and is very simple
+#Kannisto-Makeham model with Poisson loss function provides OK fit (especially at older ages) and is very simple
 pm <- lapply(1:17, function(i) coefficients(MortalityLaw(x = x,
                                                          qx = qx[[i]],
                                                          law = "kannisto_makeham",
@@ -77,16 +82,6 @@ pm.df <- data.frame(year=rep(y,each=3),
 ggplot(pm.df,aes(year,value))+
   geom_point()+
   facet_wrap(.~label,scales="free")
-
-#calculate parameter mean and standard deviation
-#outliers <- pm.df %>% group_by(label) %>% summarise(mean=mean(value),sd=sd(value))
-
-#remove parameter values that lie below or above 1 sd from the mean (outliers)
-#pm.df <- bind_rows(
-#  filter(pm.df,label=="A",value<outliers[1,]$mean + outliers[1,]$sd,value>outliers[1,]$mean - outliers[1,]$sd),
-#  filter(pm.df,label=="B",value<outliers[2,]$mean + outliers[2,]$sd,value>outliers[2,]$mean - outliers[2,]$sd),
-#  filter(pm.df,label=="C",value<outliers[3,]$mean + outliers[3,]$sd,value>outliers[3,]$mean - outliers[3,]$sd)
-#  )
 
 #estimate the change in parameter values across years using a linear model, excluding outliers 
 A <- coefficients(lm(log(filter(pm.df,label=="A")$value) ~ y))
@@ -153,7 +148,7 @@ inuit.mort <- function(age,calTime,duration){
 qx <- lapply(y, function(x) 
   filter(wpp2019lt,Location=="Upper-middle-income countries",Sex=="Total",MidPeriod==x)$qx)
 
-#Kannisto-Makeham model with loss function LF6 provides OK fit (especially at older ages) and is very simple
+#Kannisto-Makeham model with Poisson loss function 
 pm <- lapply(1:17, function(i) coefficients(MortalityLaw(x = x,
                                                          qx = qx[[i]],
                                                          law = "kannisto_makeham",
@@ -228,7 +223,7 @@ indian.mort <- function(age,calTime,duration){
 }
 
 #############################################################################
-#5.SAVING PARAMETERS AND FUNCTIONS
+#4.SAVE PARAMETERS AND FUNCTIONS
 #############################################################################
 #list with mortality parameters (both populations) 
 saveRDS(list(inuit.pm,indian.pm),"mortalityparameters")
