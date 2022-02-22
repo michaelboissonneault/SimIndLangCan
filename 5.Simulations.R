@@ -211,7 +211,7 @@ overlappingcohorts <- function(x,y){
 #EXECUTE SIMULATIONS
 ################################################################################
 #specify number of runs
-runs <- 2:10
+runs <- 1:3
 
 #language number (1 to n)
 int.nb$number <- 1:length(int.nb$language)
@@ -223,13 +223,10 @@ last26 <- int.nb %>% arrange(speaker) %>% slice(26:length(int.nb$language)) %>% 
 lapply(runs,function(a) 
   lapply(last26, 
          function(b) overlappingcohorts(a,b))) #simulation on 25 smaller languages
+
 #save in one dataframe
-last26.1run <- bind_rows(lapply(1, function(a) lapply(last26,function(b)
+last26.3runs <- bind_rows(lapply(runs, function(a) lapply(last26,function(b)
   readRDS(paste("finalpop",languages[b],a,sep=""))
 )))
 
-saveRDS(last26.1run,"last26_1run")
-
-overlappingcohorts(1,1)
-
-a <- readRDS("finalpopShuswap1")
+saveRDS(last26.3runs,"last26_3runs")
