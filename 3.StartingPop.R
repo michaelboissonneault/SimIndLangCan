@@ -272,6 +272,9 @@ total <- fvyr %>% group_by(language,age,year) %>% summarise(speaker=sum(speaker)
 total <- total %>% arrange(language)
 fvyr <- fvyr %>% arrange(language)
 
+#save for the assessments
+saveRDS(fvyr,"rawpopulations")
+
 ################################################################################
 #5. INTERPOLATION & SMOOTHING OF THE AGE STRUCTURES
 ################################################################################
