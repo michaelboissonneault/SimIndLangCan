@@ -137,7 +137,7 @@ inuit.mort <- function(age,calTime,duration){
   B <- inuit.pm[[2]][1] + inuit.pm[[2]][2]*calTime
   C <- exp(inuit.pm[[3]][1] + inuit.pm[[3]][2]*calTime)
   
-  return((A*exp(B*x) / (1 + A*exp(B*x)) + C) / 5)
+  return((A*exp(B*age) / (1 + A*exp(B*age)) + C) / 5)
   
 }
 
@@ -218,7 +218,7 @@ indian.mort <- function(age,calTime,duration){
   B <- indian.pm[[2]][1] + indian.pm[[2]][2]*calTime
   C <- exp(indian.pm[[3]][1] + indian.pm[[3]][2]*calTime)
   
-  return((A*exp(B*x) / (1 + A*exp(B*x)) + C) / 5)
+  return((A*exp(B*age) / (1 + A*exp(B*age)) + C) / 5)
   
 }
 

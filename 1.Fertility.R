@@ -16,8 +16,6 @@
 ################################################################################
 rm(list=ls())
 
-setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan")
-
 #packages
 library(tidyverse)
 library(MicSim)

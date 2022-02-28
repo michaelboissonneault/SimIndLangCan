@@ -16,8 +16,6 @@ library(MicSim)
 library(lubridate)
 library(openxlsx)
   
-setwd("C:/Users/micha/Documents/Git-RStudio/SimIndLangCan")
-  
 #starting populations
 sp <- readRDS("startingpopulations") 
   
@@ -26,14 +24,14 @@ fert.parameters <- readRDS("fertilityparameters")
 fert.fct <- readRDS("fertilityfunction")
   
 #mortality parameters & function
-inuit.list <- readRDS("mortalityparameters")[[1]]
-indian.list <- readRDS("mortalityparameters")[[2]]
+inuit.pm <- readRDS("mortalityparameters")[[1]]
+indian.pm <- readRDS("mortalityparameters")[[2]]
 
 mort.inuit <- readRDS("mortalityfunctions")[[1]]
 mort.indian <- readRDS("mortalityfunctions")[[2]]
 
 #intergenerational transmission, slope, & population number
-int.nb <- readRDS("inttrans")
+int.nb <- readRDS("xitr")
 
 #languages
 languages <- unique(int.nb$language)
@@ -211,22 +209,19 @@ overlappingcohorts <- function(x,y){
 #EXECUTE SIMULATIONS
 ################################################################################
 #specify number of runs
-runs <- 1:3
+runs <- 1:100
 
 #language number (1 to n)
 int.nb$number <- 1:length(int.nb$language)
 
-#exclude 25 smallest languages
-last26 <- int.nb %>% arrange(speaker) %>% slice(26:length(int.nb$language)) %>% pull(number)
-
 #run simulations (b specifies the language number for which we run the simulation)
 lapply(runs,function(a) 
-  lapply(last26, 
+  lapply(1:max(int.nb$number), 
          function(b) overlappingcohorts(a,b))) #simulation on 25 smaller languages
 
 #save in one dataframe
-last26.3runs <- bind_rows(lapply(runs, function(a) lapply(last26,function(b)
+last26.3runs <- bind_rows(lapply(runs, function(a) lapply(1:max(int.nb$number),function(b)
   readRDS(paste("finalpop",languages[b],a,sep=""))
 )))
 
-saveRDS(last26.3runs,"last26_3runs")
+saveRDS(results_whole_100runs,"results_whole_100runs")

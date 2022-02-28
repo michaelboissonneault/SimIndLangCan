@@ -322,6 +322,7 @@ total$abs.err <- abs(total$speaker - total$speaker_smooth)
 #new data frame
 lang.summary <- total %>% group_by(language) %>% summarise(speaker=sum(speaker),abs.err=sum(abs.err)) %>% mutate(rel.err=abs.err/speaker)
 
+#display languages with worst/best fits 
 arrange(lang.summary,-rel.err)
 arrange(lang.summary,rel.err)
 
@@ -369,6 +370,10 @@ summary(lm(filter(xITR,log(speaker)>=5)$xITR ~ log(filter(xITR,log(speaker)>=5)$
 
 #statistical relationship languages with 500 speakers or more
 summary(lm(filter(xITR,log(speaker)>=6.22)$xITR ~ log(filter(xITR,log(speaker)>=6.22)$speaker))) #adjusted R-squared = 0.47
+
+#slope of change so that 0 speakers = 0 itr 
+xITR$slope <- unlist(lapply(1:length(xITR$language), function(x) 
+  summary(lm(c(xITR$xITR[x],0) ~ c(xITR$speaker[x],0)))[[4]][[2]]))
 
 #############################################################################
 #7.SAVE

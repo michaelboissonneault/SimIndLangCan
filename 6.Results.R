@@ -28,6 +28,9 @@ results <- bind_rows(
   readRDS("first25_30runs"),
   readRDS("last26_3runs"))
 
+results <- bind_rows(
+  readRDS("first25_30runs"))
+
 ################################################################################
 #LANGUAGE PROFILES
 ################################################################################
@@ -38,7 +41,13 @@ simres <- results %>% group_by(period,language,run) %>% summarise(alive=sum(aliv
 ggplot(simres,aes(period,alive,group=run))+
   geom_line()+
   facet_wrap(.~language,scales="free")
-  
+
+ggplot(filter(simres,period==2100))+
+  geom_histogram(aes(alive))+
+  facet_wrap(.~language,scales="free")
+
+max(simres$period)
+
 #5 year periods
 simres$period5 <- floor((simres$period-1)/5)*5+1
 
