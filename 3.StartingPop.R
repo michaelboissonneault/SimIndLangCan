@@ -371,9 +371,9 @@ summary(lm(filter(xITR,log(speaker)>=5)$xITR ~ log(filter(xITR,log(speaker)>=5)$
 #statistical relationship languages with 500 speakers or more
 summary(lm(filter(xITR,log(speaker)>=6.22)$xITR ~ log(filter(xITR,log(speaker)>=6.22)$speaker))) #adjusted R-squared = 0.47
 
-#slope of change so that 0 speakers = 0 itr 
+#slope of change: y1=xITR, y2=0, x1=speakers ages 30-34, x2=0 
 xITR$slope <- unlist(lapply(1:length(xITR$language), function(x) 
-  summary(lm(c(xITR$xITR[x],0) ~ c(xITR$speaker[x],0)))[[4]][[2]]))
+  summary(lm(c(xITR$xITR[x],0) ~ c(filter(total,language==xITR$language[x],age==30)$speaker_smooth,0)))[[4]][[2]]))
 
 #############################################################################
 #7.SAVE

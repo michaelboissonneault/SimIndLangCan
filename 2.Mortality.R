@@ -11,12 +11,9 @@
   #2.INUIT POPULATION
     #2.1 PARAMETER ESTIMATES
     #2.2 SIMULATION 
-    #2.3 FUNCTION
   #3.INDIAN POPULATION
     #3.1 PARAMETER ESTIMATES
     #3.2 SIMULATION 
-    #3.3 FUNCTION
-  #4.SAVE 
 ################################################################################
 #1.PACKAGES AND DATA
 ################################################################################
@@ -51,7 +48,7 @@ absStates <- "dead"
 dts <- c("31/12/1999")
 birthDates <- chron(dates=dts,format=c(dates="d/m/Y"),out.format=c(dates="d/m/year"))
 initStates <- "f"
-n <- 10^3
+n <- 10^4
 initPop <- data.frame(ID=1:n,birthDate=rep(birthDates,n),initState=rep(initStates,n))
 
 #Age vector
@@ -88,8 +85,8 @@ A <- coefficients(lm(log(filter(pm.df,label=="A")$value) ~ y))
 B <- coefficients(lm(filter(pm.df,label=="B")$value ~ y))
 C <- coefficients(lm(log(filter(pm.df,label=="C")$value) ~ y))
 
-#put the parameters in a list
-inuit.pm <- list(A,B,C)
+#save parameters
+saveRDS(list(A,B,C),"inuit.mort.pm")
 
 #3.2. SIMULATION##################################################################
 le <- list()
@@ -130,17 +127,6 @@ ggplot(comp,aes(year,value,group=label,linetype=label))+
   geom_line()+
   theme_bw()
 
-#3.3 DEFINITION OF FUNCTION#######################################################
-inuit.mort <- function(age,calTime,duration){
-  
-  A <- exp(inuit.pm[[1]][1] + inuit.pm[[1]][2]*calTime)
-  B <- inuit.pm[[2]][1] + inuit.pm[[2]][2]*calTime
-  C <- exp(inuit.pm[[3]][1] + inuit.pm[[3]][2]*calTime)
-  
-  return((A*exp(B*age) / (1 + A*exp(B*age)) + C) / 5)
-  
-}
-
 ################################################################################
 #3.INDIAN POPULATION
 ################################################################################
@@ -169,8 +155,8 @@ A <- coefficients(lm(log(filter(pm.df,label=="A",year!=2063,year!=2068)$value) ~
 B <- coefficients(lm(filter(pm.df,label=="B",year!=2063,year!=2068)$value ~ c(seq(2018,2058,5),seq(2073,2098,5))))
 C <- coefficients(lm(log(filter(pm.df,label=="C",year!=2063,year!=2068)$value) ~ c(seq(2018,2058,5),seq(2073,2098,5))))
 
-#put the parameters in a list
-indian.pm <- list(A,B,C)
+#save parameters
+saveRDS(list(A,B,C),"indian.mort.pm")
 
 #3.2. SIMULATION##################################################################
 le <- list()
@@ -210,23 +196,3 @@ comp <- data.frame(year=y,label=label,value=value)
 ggplot(comp,aes(year,value,group=label,linetype=label))+
   geom_line()+
   theme_bw()
-
-#3.3 DEFINITION OF FUNCTION#######################################################
-indian.mort <- function(age,calTime,duration){
-  
-  A <- exp(indian.pm[[1]][1] + indian.pm[[1]][2]*calTime)
-  B <- indian.pm[[2]][1] + indian.pm[[2]][2]*calTime
-  C <- exp(indian.pm[[3]][1] + indian.pm[[3]][2]*calTime)
-  
-  return((A*exp(B*age) / (1 + A*exp(B*age)) + C) / 5)
-  
-}
-
-#############################################################################
-#4.SAVE PARAMETERS AND FUNCTIONS
-#############################################################################
-#list with mortality parameters (both populations) 
-saveRDS(list(inuit.pm,indian.pm),"mortalityparameters")
-
-#list with mortality functions (both populations)
-saveRDS(list(inuit.mort,indian.mort),"mortalityfunctions")

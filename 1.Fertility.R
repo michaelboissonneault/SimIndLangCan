@@ -7,12 +7,10 @@
 #CORRESPOND TO THE TFR IN THE UN PROJECTIONS.
 #CONTENT:
   #1.PACKAGES AND DATA
-  #2.PARAMETER ESTIMATION
-  #3.DEFINITION OF FUNCTION
-  #4.SAVE PARAMETERS AND FUNCTION
-  #5.SIMULATIONS
+  #2.PARAMETER ESTIMATION 
+  #3.SIMULATIONS AND COMPARISON
 ################################################################################
-#1.DIRECTORY, PACKAGES AND DATA
+#1.PACKAGES AND DATA
 ################################################################################
 rm(list=ls())
 
@@ -56,7 +54,7 @@ ggplot(df,aes(age,rates))+
 #year 2017.5
 y <- filter(df,year==2017.5)$rates
 pk2017 <- coef(nls(y ~ c * exp(-1*((age - m) / (ifelse(age<=26, s1, s2)*age))^2),
-                     start=list(c=.09, m=26, s1=.4, s2=.3)))
+                   start=list(c=.09, m=26, s1=.4, s2=.3)))
 
 #year 2097.5
 y <- filter(df,year==2097.5)$rates
@@ -76,54 +74,12 @@ m <- pk2017[2] - mm*1.5
 s1 <- pk2017[3] - ms1*1.5
 s2 <- pk2017[4] - ms2*1.5
 
-#put parameters in list
-fert.parameters <- list(c,m,s1,s2,mc,mm,ms1,ms2)
+#put parameters in list and save
+fert.pm <- list(c,m,s1,s2,mc,mm,ms1,ms2)
+saveRDS(fert.pm,"fert.pm")
 
 ################################################################################
-#3. Definition of function
-################################################################################
-#function
-fert.fct <- function(age,calTime,duration){
-  
-  c <-  fert.parameters[[1]] + fert.parameters[[5]]*(calTime-2016)
-  m <-  fert.parameters[[2]] + fert.parameters[[6]]*(calTime-2016)
-  s1 <- fert.parameters[[3]] + fert.parameters[[7]]*(calTime-2016)
-  s2 <- fert.parameters[[4]] + fert.parameters[[8]]*(calTime-2016)
-  
-  rate <- c * exp(-1*((age - m) / (ifelse(age<=m, s1, s2)*age))^2) 
-  
-  return(rate)
-  
-}
-
-#check fit 
-age <- seq(17.5,47.5,5)
-year <- seq(2017.5,2097.5,5)
-
-model <- unlist(lapply(year,function(x) fert.fct(age,x)))
-un <- unproj$value/2000
-
-checkfit <- data.frame(age=age,year=rep(year,each=length(age)),model=model,un=un)
-
-ggplot(checkfit,aes(age,model))+
-  geom_line()+
-  geom_point(aes(age,un))+
-  facet_wrap(~year)
-
-sum(fert.fct(10:60,2016))*2
-sum(fert.fct(10:60,2099))*2
-
-################################################################################
-#4. SAVE PARAMETERS AND FUNCTION
-################################################################################
-#list with parameters (both populations) 
-saveRDS(fert.parameters,"fertilityparameters")
-
-#list with mortality functions (both populations)
-saveRDS(fert.fct,"fertilityfunction")
-
-################################################################################
-#5. SIMULATION
+#3. SIMULATION
 ################################################################################
 #Simulation parameters##########################################################
 #Defining simulation horizon
@@ -184,10 +140,10 @@ for (i in 1:17){
   #functions that determines fertility rates 
   fert.fct <- function(age,calTime,duration){
     
-    c <-  fert.parameters[[1]] + fert.parameters[[5]]*(year[i]-2016)
-    m <-  fert.parameters[[2]] + fert.parameters[[6]]*(year[i]-2016)
-    s1 <- fert.parameters[[3]] + fert.parameters[[7]]*(year[i]-2016)
-    s2 <- fert.parameters[[4]] + fert.parameters[[8]]*(year[i]-2016)
+    c <-  fert.pm[[1]] + fert.pm[[5]]*(year[i]-2016)
+    m <-  fert.pm[[2]] + fert.pm[[6]]*(year[i]-2016)
+    s1 <- fert.pm[[3]] + fert.pm[[7]]*(year[i]-2016)
+    s2 <- fert.pm[[4]] + fert.pm[[8]]*(year[i]-2016)
     
     rate <- c * exp(-1*((age - m) / (ifelse(age<=m, s1, s2)*age))^2) 
     
