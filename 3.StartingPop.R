@@ -381,9 +381,6 @@ ggplot(xITR,aes(xITR))+
 #relationship with population size
 xITR <- left_join(xITR, total %>% group_by(language) %>% summarise(speaker=sum(speaker_smooth)))
 
-ggplot(xITR,aes(xITR,log(speaker)))+
-  geom_point()
-
 #statistical relationship whole set
 summary(lm(xITR ~ log(speaker), data=xITR)) #adjusted R-squared = 0.09
 
