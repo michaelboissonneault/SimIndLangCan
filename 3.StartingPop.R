@@ -267,8 +267,9 @@ fvyr <- bind_rows(fvyr,
 #Northern and Southern East Cree are usually considered the same
 fvyr <- bind_rows(fvyr, 
                   (fvyr %>% filter(language=="Northern East Cree"|language=="Southern East Cree") %>% 
-                     group_by(age,year,origin) %>% summarise(language="East Cree",speaker=sum(speaker)))) %>%
-  filter(language!="Northern East Cree"|language!="Sourthern East Cree")
+                     group_by(age,year,origin) %>% summarise(language="East Cree",speaker=sum(speaker)))) 
+
+fvyr <-  fvyr %>% filter(language!="Northern East Cree",language!="Southern East Cree")
 
 #Analyses for the Cree languages should rest on the 2016 data only because very few people identified themselves as speakers of one of them in 2011
 fvyr <- fvyr %>% filter((language!="Moose Cree" | year!=2011),
