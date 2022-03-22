@@ -195,11 +195,11 @@ fvyr <- mutate(fvyr, family=case_when(
   
 ))
 
-#information about subfamily
+#information about subfamily (Atikamekw, Montagnais, Naskapi not included in Cree. Although linguists consider these as Cree languages, speakers who identify themselves as Cree likely refer to those that bear the name "Cree". )
 fvyr <- mutate(fvyr,subfamily=case_when(
   
-  language=="Atikamekw" | language=="Montagnais" | language=="Moose Cree" | language=="Naskapi" | language=="Northern East Cree" | 
-    language=="Plains Cree" | language=="Southern East Cree" | language=="Swampy Cree" | language=="Woods Cree" ~ "Cree",
+  language=="Moose Cree" | language=="Northern East Cree" | language=="Naskapi" |
+  language=="Plains Cree" | language=="Southern East Cree" | language=="Swampy Cree" | language=="Woods Cree" ~ "Cree",
   
   language=="North Slavey" | language=="South Slavey" ~ "Slavey",
   
@@ -264,6 +264,20 @@ fvyr <- bind_rows(fvyr,
                              origin="in category",
                              speaker=0))
                   
+#Northern and Southern East Cree are usually considered the same
+fvyr <- bind_rows(fvyr, 
+                  (fvyr %>% filter(language=="Northern East Cree"|language=="Southern East Cree") %>% 
+                     group_by(age,year,origin) %>% summarise(language="East Cree",speaker=sum(speaker)))) %>%
+  filter(language!="Northern East Cree"|language!="Sourthern East Cree")
+
+#Analyses for the Cree languages should rest on the 2016 data only because very few people identified themselves as speakers of one of them in 2011
+fvyr <- fvyr %>% filter((language!="Moose Cree" | year!=2011),
+                            (language!="Naskapi" | year!=2011),
+                            (language!="East Cree" | year!=2011),
+                            (language!="Woods Cree" | year!=2011),
+                            (language!="Swampy Cree" | year!=2011),
+                            (language!="Plains Cree" | year!=2011))
+
 #new data frame total attributed + original speaker number, mean of both years
 total <- fvyr %>% group_by(language,age,year) %>% summarise(speaker=sum(speaker)) %>%
   group_by(language,age) %>% summarise(speaker=mean(speaker))
@@ -311,6 +325,14 @@ ggplot(filter(fvyr,nb>30,nb<=44))+
   coord_flip()
 
 ggplot(filter(fvyr,nb>44,nb<=58))+
+  geom_line(aes(age,speaker_smooth))+
+  geom_col(aes(age,speaker,fill=origin),position="stack")+
+  facet_grid(year~language,scales="free")+
+  coord_flip()
+
+ggplot(filter(fvyr,language=="Moose Cree" | language=="Northern East Cree" | 
+                language=="Naskapi" | language=="Plains Cree" | language=="Southern East Cree" | 
+                language=="Swampy Cree" | language=="Woods Cree"))+
   geom_line(aes(age,speaker_smooth))+
   geom_col(aes(age,speaker,fill=origin),position="stack")+
   facet_grid(year~language,scales="free")+
