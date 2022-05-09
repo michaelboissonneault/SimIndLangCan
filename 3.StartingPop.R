@@ -30,21 +30,23 @@ theme_set(theme_bw())
 #2. LOAD AND CLEAN DATA ON SPEAKER NUMBERS 
 ################################################################################
 #2.1 Year 2016##################################################################
-#vector to scroll through when reading the data
-dataname <- c(10926024853,20210083911,10926024928,10926025012,10926025032,10926025056,10926025114,10926025131)
+#load data 
+ms16 <- read.csv("indigenousmothertongue2016.csv")
 
-#download by age group and put into vector (one column for all info, including language names)
-ms16 <- unlist(lapply(1:8,function(x) read.csv(paste("112132202",dataname[x],".CSV",sep=""))[-c(1:34,367:380),]))
+#take part of df that is about indigenous languages
+ms16 <- ms16[8:89,]
 
-#put in data frame
-ms16 <- data.frame(label=c("language","total","single","multiple"),speaker=ms16)
+#pivot longer
+ms16 <- pivot_longer(ms16,Total...Age:X100.years.and.over,names_to="age",values_to="speaker")
 
-#rearrange into two columns: language, single speaker number
-ms16 <- data.frame(language=rep(filter(ms16,label=="language")$speaker,each=3),
-                   label=filter(ms16,label!="language")$label,
-                   speaker=filter(ms16,label!="language")$speaker) %>% 
-  filter(label=="single") %>% 
-  select(language,speaker)
+#remove total variable
+ms16 <- filter(ms16,age!="Total...Age")
+
+#create new age variable
+ms16$age <- rep(seq(0,100,5),length(ms16$Mother.tongue)/21)
+
+#rename mother tongue to language
+ms16 <- rename(ms16,language=Mother.tongue)
 
 #remove trailing spaces at beginning of language names
 ms16$language <- trimws(ms16$language)
@@ -55,26 +57,30 @@ ms16$language2 <- stringr::str_extract(string=ms16$language,pattern = "(?<=\\().
 #remove information between parentheses
 ms16$language <- gsub("\\s*\\([^\\)]+\\)","",as.character(ms16$language))
 
-#transform speaker numbers to numeric variable
-ms16$speaker <- as.numeric(ms16$speaker)
-
-#add information on age
-ms16$agelo <- rep(c(0,seq(15,75,10)),each=length(unique(ms16$language)))
-ms16$agehi <- rep(c(14,seq(24,84,10)),each=length(unique(ms16$language)))
-
 #add year
 ms16$year <- 2016
 
-#2.2 Year 2011######################################################################
-#vectors to scroll through when reading the data
-dataname <- c(618,734,753,812,834,855)
+#2.1 Year 2011##################################################################
+#load data 
+ms11 <- read.csv("indigenousmothertongue2011.csv")
 
-#download by age group and merge
-ms11 <- bind_rows(lapply(1:6,function(x) read.csv(paste("10325120210909034",dataname[x],".CSV",sep=""),header=F)[9:73,c(1,3)]))
+#take part of df that is about indigenous languages
+ms11 <- ms11[7:80,]
 
-#rename variables
-ms11 <- rename(ms11,language=V1)
-ms11 <- rename(ms11,speaker=V3)
+#pivot longer
+ms11 <- pivot_longer(ms11,Total...Age:X100.years.and.over,names_to="age",values_to="speaker")
+
+#remove total variable
+ms11 <- filter(ms11,age!="Total...Age")
+
+#create new age variable
+ms11$age <- rep(seq(0,100,5),length(ms11$Mother.Tongue)/21)
+
+#rename mother tongue to language
+ms11 <- rename(ms11,language=Mother.Tongue)
+
+#remove trailing spaces at beginning of language names
+ms11$language <- trimws(ms11$language)
 
 #take information between parentheses and create new variable for alternate name
 ms11$language2 <- stringr::str_extract(string=ms11$language,pattern = "(?<=\\().*(?=\\))")
@@ -82,59 +88,14 @@ ms11$language2 <- stringr::str_extract(string=ms11$language,pattern = "(?<=\\().
 #remove information between parentheses
 ms11$language <- gsub("\\s*\\([^\\)]+\\)","",as.character(ms11$language))
 
-#Innu Montagnais special case
-ms11$language <- ifelse(ms11$language=="Innu/Montagnais","Montagnais",ms11$language)
-ms11$language2 <- ifelse(ms11$language=="Montagnais","Innu",ms11$language2)
-
-#transform speaker numbers to numeric variable
-ms11$speaker <- as.numeric(ms11$speaker)
-
-#add age variables
-ms11$agelo <- rep(c(0,15,25,45,65,75),each=length(unique(ms11$language)))
-ms11$agehi <- rep(c(14,24,44,64,74,84),each=length(unique(ms11$language)))
-
 #add year
 ms11$year <- 2011
 
-#Use the 2016 names for the 2011 dataset
-ms11 <- mutate(ms11,
-               language=replace(language,language=="Wetsuweten","Babine"),
-               language=replace(language,language=="Tlicho","Dogrib"),
-               language=replace(language,language=="Gitksan","Gitxsan"),
-               language=replace(language,language=="Nootka","Nuu-chah-nulth"),
-               language=replace(language,language=="Sarcee","Sarsi"))
-
-#########################################################################################
-#3. DIVIDE SPEAKER NUMBERS INTO 5-YEAR AGE CATEGORIES
-#########################################################################################
-#function to attribute speakers to 5 year age categories 
-fvyr.fct <- function(x,y,dta){
-  
-  #select information in data frame based on age, language and year
-  df <- dta %>% filter(agelo==x,language==y)
-  
-  #calculate width of age category
-  w <- (df$agehi-df$agelo+1)/5
-  
-  #make data frame with 5-year age categories
-  df <- data.frame(language=rep(y,w),
-                   speaker=rep(sum(df$speaker)/w,w),
-                   age=c(seq(df$agelo,df$agehi,5)),
-                   year=df$year)
-  } 
-
-#Apply function to data from year 2016
-fvyr.list.2016 <- lapply(unique(ms16$agelo), function(x)
-  lapply(unique(ms16$language), function(y) fvyr.fct(x,y,ms16))) 
-
-#Apply function to data from year 2011
-fvyr.list.2011 <- lapply(unique(ms11$agelo), function(x)
-  lapply(unique(ms11$language), function(y) fvyr.fct(x,y,ms11))) 
-
+#Both years#####################################################################
 #merge both years in single data frame
 fvyr <- bind_rows(
-  bind_rows(fvyr.list.2016),
-  bind_rows(fvyr.list.2011)) 
+  bind_rows(ms16),
+  bind_rows(ms11)) 
 
 #athapaskan = athabaskan
 fvyr$language <- ifelse(fvyr$language=="Athapaskan languages, n.i.e.","Athabaskan languages, n.i.e.",fvyr$language)
@@ -160,7 +121,7 @@ broadspeaker <-
   lapply(1:length(broad),function(x) 
   fvyr %>% 
   group_by(age,year) %>% 
-  filter(str_detect(language,paste(broad[x],", n.o.s.",sep=""))|str_detect(language,paste(broad[x],", n.i.e.",sep=""))) %>% 
+  filter(str_detect(language,paste(broad[x], ", n.o.s.",sep="")) | str_detect(language, paste(broad[x], ", n.i.e.", sep=""))) %>% 
   summarise(speaker=sum(speaker),name=str_remove(broad[x]," languages")))) 
 
 #remove broad categories from main dataset
@@ -251,19 +212,6 @@ fvyr <- fvyr %>% select(language,age,year,speaker,attributed)
 fvyr <- fvyr %>% pivot_longer(c(speaker,attributed),names_to = "origin", values_to = "speaker") %>% 
   mutate(origin = case_when(origin=="speaker" ~ "in category", origin=="attributed" ~ "attributed"))
 
-#add zero speaker numbers ages 85, 90, 95 (to help smoothing below)
-fvyr <- bind_rows(fvyr,
-                  data.frame(language=rep(unique(filter(fvyr,year==2011)$language),each=3),
-                             age=c(85,90,95),
-                             year=2011,
-                             origin="in category",
-                             speaker=0),
-                  data.frame(language=rep(unique(filter(fvyr,year==2016)$language),each=3),
-                             age=c(85,90,95),
-                             year=2016,
-                             origin="in category",
-                             speaker=0))
-                  
 #Northern and Southern East Cree are usually considered the same
 fvyr <- bind_rows(fvyr, 
                   (fvyr %>% filter(language=="Northern East Cree"|language=="Southern East Cree") %>% 
@@ -293,29 +241,24 @@ saveRDS(fvyr,"rawpopulations")
 ################################################################################
 #5. INTERPOLATION & SMOOTHING OF THE AGE STRUCTURES
 ################################################################################
-#loess model
-total$speaker_smooth <- unlist(lapply(unique(total$language), function(x) 
-  predict(loess(speaker ~ age, span=0.5, data=filter(total,language==x)))))
-
-#replace negative values with zero
-total$speaker_smooth <- ifelse(total$speaker_smooth<0,0,total$speaker_smooth)
-
-#join smoothed data to original data
-fvyr <- left_join(fvyr,select(total,language,age,speaker_smooth))
-
 #attribute numbers to languages
 fvyr <- left_join(fvyr,data.frame(language=unique(fvyr$language),nb=1:length(unique(fvyr$language))))
 
+#starting populations
+startpop <- fvyr %>% group_by(nb,language,age) %>% summarise(speaker=mean(speaker))
+
+#read in interpolated data
+startpop <- left_join(startpop,readRDS("startingpopulations"),by=c("language","age"))
+startpop <- pivot_longer(startpop,c(speaker.x,speaker.y),names_to = "version",values_to="speaker")
+
 #check fit
-ggplot(filter(fvyr,nb<=15))+
-  geom_line(aes(age,speaker_smooth))+
-  geom_col(aes(age,speaker,fill=origin),position="stack")+
-  facet_grid(year~language,scales="free")+
+ggplot(filter(startpop,nb<=15))+
+  geom_col(aes(age,speaker))+
+  facet_grid(version~language,scales="free")+
   coord_flip()
 
 ggplot(filter(fvyr,nb>15,nb<=30))+
-  geom_line(aes(age,speaker_smooth))+
-  geom_col(aes(age,speaker,fill=origin),position="stack")+
+  geom_col(aes(age,speaker))+
   facet_grid(year~language,scales="free")+
   coord_flip()
 
